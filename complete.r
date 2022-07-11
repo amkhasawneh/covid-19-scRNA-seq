@@ -1,9 +1,8 @@
-#!/home/nghlm/R/bin/Rscript --verbose
-
 #################################Loading########################################
 #Loading libraries:
 library(Seurat)
 library(SeuratDisk)
+library(Azimuth)
 library(tidyverse)
 library(patchwork)
 library(Matrix)
@@ -11,24 +10,24 @@ library(pals)
 library(cowplot)
 
 #Loading data:
-mild227 <- Read10X("from_cellranger/mild227/sample_feature_bc_matrix")
-moderate124 <- Read10X("from_cellranger/moderate124/sample_feature_bc_matrix")
-mild186 <- Read10X("from_cellranger/mild186/sample_feature_bc_matrix")
-critical213<- Read10X("from_cellranger/critical213/sample_feature_bc_matrix")
-moderate303 <- Read10X("from_cellranger/moderate303/sample_feature_bc_matrix")
-critical308 <- Read10X("from_cellranger/critical308/sample_feature_bc_matrix")
-moderate138 <- Read10X("from_cellranger/moderate138/sample_feature_bc_matrix")
-moderate272 <- Read10X("from_cellranger/moderate272/sample_feature_bc_matrix")
-severe122 <- Read10X("from_cellranger/severe122/sample_feature_bc_matrix")
-severe123 <- Read10X("from_cellranger/severe123/sample_feature_bc_matrix")
-critical119 <- Read10X("from_cellranger/critical119/sample_feature_bc_matrix")
-critical120 <- Read10X("from_cellranger/critical120/sample_feature_bc_matrix")
-critical238 <- Read10X("from_cellranger/critical238/sample_feature_bc_matrix")
-critical293 <- Read10X("from_cellranger/critical293/sample_feature_bc_matrix")
-hc1 <- Read10X("from_cellranger/hc1/sample_feature_bc_matrix")
-hc2 <- Read10X("from_cellranger/hc2/sample_feature_bc_matrix")
-hc3 <- Read10X("from_cellranger/hc3/sample_feature_bc_matrix")
-hc4 <- Read10X("from_cellranger/hc4/sample_feature_bc_matrix")
+mild227 <- Read10X("from_cellranger\\mild227\\sample_feature_bc_matrix")
+moderate124 <- Read10X("from_cellranger\\moderate124\\sample_feature_bc_matrix")
+mild186 <- Read10X("from_cellranger\\mild186\\sample_feature_bc_matrix")
+critical213<- Read10X("from_cellranger\\critical213\\sample_feature_bc_matrix")
+moderate303 <- Read10X("from_cellranger\\moderate303\\sample_feature_bc_matrix")
+critical308 <- Read10X("from_cellranger\\critical308\\sample_feature_bc_matrix")
+moderate138 <- Read10X("from_cellranger\\moderate138\\sample_feature_bc_matrix")
+moderate272 <- Read10X("from_cellranger\\moderate272\\sample_feature_bc_matrix")
+severe122 <- Read10X("from_cellranger\\severe122\\sample_feature_bc_matrix")
+severe123 <- Read10X("from_cellranger\\severe123\\sample_feature_bc_matrix")
+critical119 <- Read10X("from_cellranger\\critical119\\sample_feature_bc_matrix")
+critical120 <- Read10X("from_cellranger\\critical120\\sample_feature_bc_matrix")
+critical238 <- Read10X("from_cellranger\\critical238\\sample_feature_bc_matrix")
+critical293 <- Read10X("from_cellranger\\critical293\\sample_feature_bc_matrix")
+hc1 <- Read10X("from_cellranger\\hc1\\sample_feature_bc_matrix")
+hc2 <- Read10X("from_cellranger\\hc2\\sample_feature_bc_matrix")
+hc3 <- Read10X("from_cellranger\\hc3\\sample_feature_bc_matrix")
+hc4 <- Read10X("from_cellranger\\hc4\\sample_feature_bc_matrix")
 
 #Creating Seurat objects:
 mild227 <- CreateSeuratObject(counts = mild227, min.cells = 3, min.features = 100)
@@ -50,7 +49,7 @@ hc2 <- CreateSeuratObject(counts = hc2, min.cells = 3, min.features = 100)
 hc3 <- CreateSeuratObject(counts = hc3, min.cells = 3, min.features = 100)
 hc4 <- CreateSeuratObject(counts = hc4, min.cells = 3, min.features = 100)
 
-covid <- merge(x = critical119, y = c(critical120, critical213, critical238,
+covid <- merge(x = critical119, y = c(critical119, critical120, critical213, critical238,
                                       critical293, critical308,
                                       mild186, mild227, 
                                       moderate124, moderate138, moderate272, moderate303,
@@ -80,6 +79,7 @@ gc()
 #Adjusting the limit for allowable R object sizes: 
 options(future.globals.maxSize = 9000 * 1024^2)
 
+#Clearing memory:
 gc()
 
 #################################QC#############################################
@@ -110,6 +110,7 @@ metadata <- metadata %>%
   rename(seq.folder = orig.ident,
          nUMI = nCount_RNA,
          nGene = nFeature_RNA)
+head(metadata[which(str_detect(metadata$cell, ".*healthy")),])
 
 #Creating a severity column:
 metadata$severity <- NA
@@ -119,7 +120,6 @@ metadata$severity[which(str_detect(metadata$cell, ".*severe"))] <- "severe"
 metadata$severity[which(str_detect(metadata$cell, ".*critical"))] <- "critical"
 metadata$severity[which(str_detect(metadata$cell, ".*healthy"))] <- "healthy"
 metadata$severity <- as.factor(metadata$severity)
-
 #Creating a sample column:
 metadata$sample <- NA
 metadata$sample <- sub("(.*?)_{1}(.*?)($|-.*)", "\\1", rownames(metadata))
@@ -134,6 +134,16 @@ metadata$sample <- factor(metadata$sample, levels = c("healthy1_control1", "heal
 
 #Creating a patient column:
 metadata$patient <- sub("(.*?)_", "\\2", metadata$sample)
+metadata$patient[metadata$patient == "control1"] <- "Control 1"
+metadata$patient[metadata$patient == "control2"] <- "Control 2"
+metadata$patient[metadata$patient == "control3"] <- "Control 3"
+metadata$patient[metadata$patient == "control4"] <- "Control 4"
+metadata$patient[metadata$patient == "Patient1"] <- "Patient 1"
+metadata$patient[metadata$patient == "Patient2"] <- "Patient 2"
+metadata$patient[metadata$patient == "Patient3"] <- "Patient 3"
+metadata$patient[metadata$patient == "Patient4"] <- "Patient 4"
+metadata$patient[metadata$patient == "Patient5"] <- "Patient 5"
+metadata$patient[metadata$patient == "Patient6"] <- "Patient 6"
 
 #Creating an outcome column:
 metadata$outcome <- "Recovered"
@@ -240,6 +250,11 @@ covid$nFeature_RNA <- NULL
 remove(counts, metadata, nonzero, keep, plot1, plot2)
 gc()
 
+#Saving filtered file:
+saveRDS(covid, "01-covid-filtered.rds")
+
+covid <- readRDS("01-covid-filtered.rds")
+
 #Cell cycle scoring#
 #Loading cell cycle markers:
 load("cycle.rda")
@@ -261,8 +276,8 @@ LabelPoints(plot = VariableFeaturePlot(covid[,covid$severity == "healthy"]), poi
 remove(top20, s_genes, g2m_genes)
 gc()
 
-#Saving filtered file:
 saveRDS(covid, "01-covid-filtered.rds")
+
 
 #################################Split-Scaling & Azimuth########################
 
@@ -278,11 +293,6 @@ for (i in 1:length(split.covid)) {
   split.covid[[i]] <- FindVariableFeatures(split.covid[[i]], verbose = T)
   split.covid[[i]] <- ScaleData(split.covid[[i]], verbose = T)
 }
-for (i in 1:length(splcov)) {
-  splcov[[i]] <- NormalizeData(splcov[[i]], verbose = T)
-  splcov[[i]] <- FindVariableFeatures(splcov[[i]], verbose = T)
-  splcov[[i]] <- ScaleData(splcov[[i]], verbose = T)
-}
 
 #Saving separate RDS files for each sample:
 for (i in names(split.covid)) {
@@ -294,15 +304,15 @@ for (i in names(split.covid)) {
 #into the object:
 critical293_Patient1 <- readRDS("critical293_Patient1.rds")
 moderate272_Patient1 <- readRDS("moderate272_Patient1.rds")
-critical308_Patient2 <- readRDS("critical308_Patient2.rds")
-moderate303_Patient2 <- readRDS("moderate303_Patient2.rds")
-critical213_Patient3 <- readRDS("critical213_Patient3.rds")
-mild186_Patient3 <- readRDS("mild186_Patient3.rds")
+critical213_Patient2 <- readRDS("critical213_Patient2.rds")
+mild186_Patient2 <- readRDS("mild186_Patient2.rds")
+critical308_Patient3 <- readRDS("critical308_Patient3.rds")
+moderate303_Patient3 <- readRDS("moderate303_Patient3.rds")
 critical238_Patient4 <- readRDS("critical238_Patient4.rds")
 mild227_Patient4 <- readRDS("mild227_Patient4.rds")
-critical119_Patient5 <- readRDS("critical119_Patient5.rds")
+critical119_Patient5 <- readRDS("critical119_Patient6.rds")
 severe123_Patient5 <- readRDS("severe123_Patient5.rds")
-moderate138_Patient5 <- readRDS("moderate138_Patient5.rds")
+moderate138_Patient5 <- readRDS("moderate138_Patient6.rds")
 critical120_Patient6 <- readRDS("critical120_Patient6.rds")
 moderate124_Patient6 <- readRDS("moderate124_Patient6.rds")
 severe122_Patient6 <- readRDS("severe122_Patient6.rds")
@@ -314,10 +324,10 @@ healthy4_control4 <- readRDS("healthy4_control4.rds")
 #Importing Azimuth's results for each sample:
 critical293_Patient1$azimuthNames <- read.table("critical293_Patient1_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 moderate272_Patient1$azimuthNames<- read.table("moderate272_Patient1_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-critical308_Patient2$azimuthNames <- read.table("critical308_Patient2_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-moderate303_Patient2$azimuthNames<- read.table("moderate303_Patient2_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-critical213_Patient3$azimuthNames <- read.table("critical213_Patient3_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-mild186_Patient3$azimuthNames<- read.table("mild186_Patient3_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
+critical213_Patient2$azimuthNames <- read.table("critical213_Patient2_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
+mild186_Patient2$azimuthNames<- read.table("mild186_Patient2_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
+critical308_Patient3$azimuthNames <- read.table("critical308_Patient3_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
+moderate303_Patient3$azimuthNames<- read.table("moderate303_Patient3_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 critical238_Patient4$azimuthNames<- read.table("critical238_Patient4_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 mild227_Patient4$azimuthNames<- read.table("mild227_Patient4_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 critical119_Patient5$azimuthNames<- read.table("critical119_Patient5_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
@@ -335,9 +345,9 @@ gc()
 
 
 split.covid <- list(critical119_Patient5, critical120_Patient6, critical238_Patient4, critical293_Patient1,
-                    critical213_Patient3, critical308_Patient2,
-                    mild227_Patient4, mild186_Patient3,
-                    moderate124_Patient6, moderate138_Patient5, moderate272_Patient1, moderate303_Patient2,
+                    critical213_Patient2, critical308_Patient3,
+                    mild227_Patient4, mild186_Patient2,
+                    moderate124_Patient6, moderate138_Patient5, moderate272_Patient1, moderate303_Patient3,
                     severe122_Patient6, severe123_Patient5,
                     healthy1_control1, healthy2_control2, healthy3_control3, 
                     healthy4_control4)
@@ -346,9 +356,9 @@ split.covid <- list(critical119_Patient5, critical120_Patient6, critical238_Pati
 #Saving the split object:
 saveRDS(split.covid, "02-covid-split-scaled.rds")
 remove(critical119_Patient5, critical120_Patient6, critical238_Patient4, critical293_Patient1,
-       critical213_Patient3, critical308_Patient2,
-       mild227_Patient4, mild186_Patient3,
-       moderate124_Patient6, moderate138_Patient5, moderate272_Patient1, moderate303_Patient2,
+       critical213_Patient2, critical308_Patient3,
+       mild227_Patient4, mild186_Patient2,
+       moderate124_Patient6, moderate138_Patient5, moderate272_Patient1, moderate303_Patient3,
        severe122_Patient6, severe123_Patient5,
        healthy1_control1, healthy2_control2, healthy3_control3, 
        healthy4_control4)
@@ -358,29 +368,16 @@ gc()
 #################################Integration####################################
 
 #Importing the split file:
-split.covid <- readRDS("02-covid-split-scaled.rds")
-
-
+split.covid <- readRDS("02-split-scaled.rds")
 
 #Selecting the most variable features for integration:
-integ.feat <- SelectIntegrationFeatures(object.list = split.covid, nfeatures = 2500)
-
-#Applying SCTransform to the samples:
-split.covid <- lapply(X= split.covid, FUN=SCTransform)
-for (i in 1:length(splcov)) {
-
-  splcov[[i]] <- RunPCA(splcov[[i]], features = integ.feat, verbose=T)
-}
-
-splcov <- list(cthl = readRDS("countmat-hlth.rds"),
-		ctdd = readRDS("countmat-dd.rds"),
-		ctrc = readRDS("countmat-rc.rds"))
-
+integ.feat <- SelectIntegrationFeatures(object.list = split.covid, nfeatures = 5000)
 
 #Performing canonical correlation analysis (CCA), and identifying and filtering anchors:
-anchors <- FindIntegrationAnchors(object.list = split.covid, anchor.features = integ.feat, reduction = "rpca", k.anchor = 20, verbose = T)                  #
+anchors <- FindIntegrationAnchors(object.list = split.covid, anchor.features = integ.feat,
+                                  verbose = T)                  #
                                                                 #These two steps had to be done
-saveRDS(anchors, "anchors2.rds")                                 #on the Linux machine,
+saveRDS(anchors, "anchors.rds")                                 #on the Linux machine,
                                                                 #as an RScript,
                                                                 #due to memory restrictions.
 remove(covid, split.covid, integ.feat)                          ###(They need a ton of RAM!)
@@ -404,8 +401,7 @@ DefaultAssay(covid) <- "integrated"
 covid <- ScaleData(covid, features = rownames(covid))
 
 #Linear dimensional reduction:
-covid <- RunPCA(covid, features = VariableFeatures(object = covid), verbose = T, npcs=30)
-covid <- RunUMAP(covid, dims = 1:30, reduction = "pca", return.model = T)
+covid <- RunPCA(covid, features = VariableFeatures(object = covid), verbose = T)
 
 #Examining PCA results:
 print(covid[["pca"]], dims = 1:5, nfeatures = 5)
@@ -415,7 +411,7 @@ DimPlot(covid, reduction = "pca")
 DimHeatmap(covid, dims = 1:15, cells = 500, balanced = TRUE)
 
 #Determining the dimensionality of the data:
-ElbowPlot(covid, ndims=40) #This implies going for around 30 might be OK.
+ElbowPlot(covid, ndims = 40) #This implies going for around 30 might be OK.
 
 saveRDS(covid, "03-covid-integrated.rds")
 
@@ -425,17 +421,55 @@ covid <- readRDS("03-covid-integrated.rds")
 gc()
 
 #Graph-based clustering:
-covid <- FindNeighbors(covid, dims = 1:30, reduction = "pca", verbose = T)
-covid <- FindClusters(covid, verbose = T, resolution = c(0.4, 0.6, 0.8, 1, 1.2))
+covid <- FindNeighbors(covid, dims = 1:40, verbose = T)
+covid <- FindClusters(covid, verbose = T,
+                      resolution = 0.6)
 
-Idents(covid) <- "integrated_snn_res.1.4"
+Idents(covid) <- "integrated_snn_res.1.2" #This one seems to make the most sense.
 
 #Non-linear dimensional reduction:
-
-Idents(covid) <- "azimuthNames"
-DimPlot(covid, reduction = "umap", label = T, repel = T) + NoLegend()
+covid <- RunUMAP(covid, dims = 1:40, return.model = T)
+Idents(covid) <- "integrated_snn_res.0.6"
+DimPlot(covid, reduction = "umap", label = T, repel = T, raster = F, group.by = "azimuthNames") + NoLegend()
 DimPlot(covid, reduction = "umap", split.by = "severity") + NoLegend()
 DimPlot(covid, reduction = "umap", split.by = "sample") + NoLegend()
 gc()
 
 saveRDS(covid, "04-covid-clustered.rds")
+
+
+countmat.hlth <- covid[,covid$severity == "healthy"]@assays$RNA@counts
+countmat.rc <- covid[,covid$severity != "healthy" & covid$outcome == "Recovered"]@assays$RNA@counts
+countmat.dd <- covid[,covid$severity != "healthy" & covid$outcome == "Deceased"]@assays$RNA@counts
+
+
+countmat.hlth <- CreateSeuratObject(countmat.hlth)
+countmat.hlth$azimuthNames <- read.table("countmat-hlth.tsv", sep = "\t", header = T)$predicted.celltype.l2
+countmat.hlth@meta.data <- covid[,covid$severity == "healthy"]@meta.data
+saveRDS(countmat.hlth, "countmat-hlth.rds")
+
+countmat.rc <- CreateSeuratObject(countmat.rc)
+countmat.rc@meta.data <- covid[,covid$outcome == "Recovered"]@meta.data
+countmat.rc$azimuthNames <- read.table("countmat-rc.tsv", sep = "\t", header = T)$predicted.celltype.l2
+saveRDS(countmat.rc, "countmat-rc.rds")
+
+countmat.dd <- CreateSeuratObject(countmat.dd)
+countmat.dd@meta.data <- covid[,covid$outcome == "Deceased"]@meta.data
+countmat.dd$azimuthNames <- read.table("countmat-dd.tsv", sep = "\t", header = T)$predicted.celltype.l2
+saveRDS(countmat.dd, "countmat-dd.rds")
+
+
+Idents(countmat.hlth) <- "azimuthNames"
+DimPlot(countmat.hlth, reduction = "umap", label = T, repel = T, raster = F) + NoLegend()
+
+
+
+
+
+
+
+
+
+
+
+
