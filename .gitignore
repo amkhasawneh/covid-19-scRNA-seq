@@ -10,10 +10,12 @@ reated by https://www.toptal.com/developers/gitignore/api/r
 .RData
 .RDataTmp
 *.rds
+*.rda
 
 *.tsv
 from_cellranger/
 ~*
+
 # User-specific files
 .Ruserdata
 
