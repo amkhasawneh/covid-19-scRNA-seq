@@ -174,7 +174,7 @@ BCR$sample <- factor(BCR$sample, levels = c("healthy1_control1", "healthy2_contr
 #Adding V and J gene usage:
 BCR$v_gene <- vapply(strsplit(BCR$CTgene, "[.]"), "[", "", 1)
 BCR$v_gene <- sub("(NA)", NA, BCR$v_gene)
-BCR$j_gene <- vapply(strsplit(BCR$CTgene, "[.]"), "[", "", 3)
+BCR$j_gene <- vapply(strsplit(BCR$CTgene, "[.]"), "[", "", 2)
 BCR$j_gene <- gsub("(.*[KL].*)", NA, BCR$j_gene)
 BCR$c_gene <- vapply(strsplit(vapply(strsplit(BCR$CTgene, "[_]"), "[", "", 1), "[.]"), "[", "", 4)
 
