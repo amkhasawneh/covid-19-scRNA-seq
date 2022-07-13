@@ -149,6 +149,29 @@ metadata$patient[metadata$patient == "Patient6"] <- "Patient 6"
 metadata$outcome <- "Recovered"
 metadata$outcome[metadata$patient == "Patient1" | metadata$patient == "Patient2" | metadata$patient == "Patient3"] <- "Deceased"
 
+#Creating a sample collection date column:
+metadata$date[metadata$sample == "moderate272_Patient1"] <- "2021-05-24" 
+metadata$date[metadata$sample == "critical293_Patient1"] <- "2021-06-03"
+metadata$date[metadata$sample == "moderate303_Patient2"] <- "2021-06-09"
+metadata$date[metadata$sample == "critical308_Patient2"] <- "2021-06-18"
+metadata$date[metadata$sample == "mild186_Patient3"] <- "2021-03-29"
+metadata$date[metadata$sample == "critical213_Patient3"] <- "2021-04-15"
+metadata$date[metadata$sample == "mild227_Patient4"] <- "2021-04-22"
+metadata$date[metadata$sample == "critical238_Patient4"] <- "2021-04-30"
+metadata$date[metadata$sample == "critical213_Patient3"] <- "2021-04-15"
+metadata$date[metadata$sample == "critical119_Patient5"] <- "2020-11-27"
+metadata$date[metadata$sample == "severe123_Patient5"] <- "2020-12-11"
+metadata$date[metadata$sample == "moderate138_Patient5"] <- "2020-12-25"
+metadata$date[metadata$sample == "critical213_Patient3"] <- "2021-04-15"
+metadata$date[metadata$sample == "critical120_Patient6"] <- "2020-11-27"
+metadata$date[metadata$sample == "severe122_Patient6"] <- "2020-12-04"
+metadata$date[metadata$sample == "moderate124_Patient6"] <- "2020-12-11"
+metadata$date[metadata$sample == "healthy1_control1"] <- "2021-07-19"
+metadata$date[metadata$sample == "healthy2_control2"] <- "2021-09-01"
+metadata$date[metadata$sample == "healthy3_control3"] <- "2021-09-02"
+
+metadata$date <- metadata$date %>% as.Date(origin='1970-01-01')
+
 #Putting metadata back into Seurat object:
 covid@meta.data <- metadata
 
@@ -437,39 +460,27 @@ gc()
 
 saveRDS(covid, "04-covid-clustered.rds")
 
-
+#Extracting count matrices to upload to Azimuth:
 countmat.hlth <- covid[,covid$severity == "healthy"]@assays$RNA@counts
-countmat.rc <- covid[,covid$severity != "healthy" & covid$outcome == "Recovered"]@assays$RNA@counts
-countmat.dd <- covid[,covid$severity != "healthy" & covid$outcome == "Deceased"]@assays$RNA@counts
-
-
+saveRDS(countmat.hlth, "countmat-hlth.rds")
 countmat.hlth <- CreateSeuratObject(countmat.hlth)
 countmat.hlth$azimuthNames <- read.table("countmat-hlth.tsv", sep = "\t", header = T)$predicted.celltype.l2
 countmat.hlth@meta.data <- covid[,covid$severity == "healthy"]@meta.data
 saveRDS(countmat.hlth, "countmat-hlth.rds")
 
+countmat.rc <- covid[,covid$severity != "healthy" & covid$outcome == "Recovered"]@assays$RNA@counts
+saveRDS(countmat.rc, "countmat-rc.rds")
 countmat.rc <- CreateSeuratObject(countmat.rc)
 countmat.rc@meta.data <- covid[,covid$outcome == "Recovered"]@meta.data
 countmat.rc$azimuthNames <- read.table("countmat-rc.tsv", sep = "\t", header = T)$predicted.celltype.l2
 saveRDS(countmat.rc, "countmat-rc.rds")
 
+countmat.dd <- covid[,covid$severity != "healthy" & covid$outcome == "Deceased"]@assays$RNA@counts
+saveRDS(countmat.dd, "countmat-dd.rds")
 countmat.dd <- CreateSeuratObject(countmat.dd)
 countmat.dd@meta.data <- covid[,covid$outcome == "Deceased"]@meta.data
 countmat.dd$azimuthNames <- read.table("countmat-dd.tsv", sep = "\t", header = T)$predicted.celltype.l2
 saveRDS(countmat.dd, "countmat-dd.rds")
 
-
 Idents(countmat.hlth) <- "azimuthNames"
 DimPlot(countmat.hlth, reduction = "umap", label = T, repel = T, raster = F) + NoLegend()
-
-
-
-
-
-
-
-
-
-
-
-
