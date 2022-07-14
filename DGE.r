@@ -6,6 +6,12 @@ library(Seurat)
 library(SeuratObject)
 library(tidyverse)
 library(enrichR)
+library(presto)
+library(msigdbr)
+library(fgsea)
+library(tidyverse)
+library(DOSE)
+library(clusterProfiler)
 
 BCR <- readRDS("05-BCR-combined.rds")
 BCR <- BCR[,BCR$patient != "Control 4"]
@@ -49,23 +55,57 @@ dittoPlot(BCR, "HALLMARK_DNA_REPAIR", group.by = "sample") +
 hiclo <- NULL
 for (i in levels(factor(BCR@meta.data$sample))) {
   BCR@meta.data[BCR$sample == i,] %>%
-    group_by(v_gene, j_gene, sample) %>% na.omit() %>% dplyr::count() %>% arrange(desc(n)) %>%
-    as.data.frame() -> matrix
-  hiclo <- rbind(hiclo, matrix[1,])
+    group_by(v_gene, j_gene, sample)  %>% dplyr::count() %>% na.omit() %>%
+    arrange(desc(n)) %>% as.data.frame() -> matrix
+    hiclo <- rbind(hiclo, matrix[1,])
   
 }
 
 
 
-degs[!grepl("IGH", rownames(degs)) & !grepl("IGL", rownames(degs)) & !grepl("IGK", rownames(degs)),]
+BCR@meta.data %>% group_by(v_gene, j_gene) %>% na.omit() %>% count() %>% 
+  arrange(desc(n)) %>% head(40) 
 
-BCR@meta.data %>% group_by(v_gene, j_gene) %>% count() %>% arrange(desc(n))
+#Plasmablasts:healthy2_control2 has 2 cells
+plasma <- BCR[,BCR$azimuthNames == "Plasmablast"]
+plasma$sample <- droplevels(plasma$sample)
+Idents(plasma) <- "sample"
+plasma <- ScaleData(plasma)
+mrk <- FindAllMarkers(plasma, min.pct = 0.25, logfc.threshold = 0.58) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-plasmablasts.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(plasma, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                    genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-plasmablasts.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+                         title = "Plasmablasts",
+                         y = "Count", orderBy = "P.value"))
 
-
+#B intermediate: 
+bint <- BCR[,BCR$azimuthNames == "B intermediate"]
+bint$sample <- droplevels(bint$sample)
+Idents(bint) <- "sample"
+bint <- ScaleData(bint)
+mrk <- FindAllMarkers(bint, min.pct = 0.25, logfc.threshold = 0.58) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-B intermediate.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(plasma, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                    genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-B intermediate.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+                         title = "B intermediate",
+                         y = "Count", orderBy = "P.value"))
 
 
 Idents(BCR) <- "sample"
-
 #Patient 1:
 pt1 <- BCR[,BCR$patient == "Patient 1"]
 pt1$sample <- droplevels(pt1$sample)
@@ -247,14 +287,173 @@ ggsave(filename = "graphs/enrichment-pt6-IGHV3-23-all.jpeg", dpi = "print",
 
 
 Idents(BCR) <- "sample"
-#IGHV1-18:
+
+DoHeatmap(BCR, features = rownames(FindAllMarkers(BCR, min.pct = 0.25, logfc.threshold = 0.58, only.pos = T) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)), group.by = "sample")
+
+#IGHV1-18: moderate124_Patient6 has 2 cells, severe122_Patient6 0
 vg <- BCR[,BCR$v_gene == "IGHV1-18"]
 vg$sample <-  droplevels(vg$sample)
 vg <- ScaleData(vg)
 mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58) %>%
   subset(p_val_adj < 0.05) %>%
   arrange(p_val_adj)
-DoHeatmap(vg, features = rownames(mrk), group.by = "sample")
+ggsave(filename = "graphs/DEGs-IGHV1-18.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                       genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV1-18.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+           title = "IGHV1-18",
+           y = "Count", orderBy = "P.value"))
+
+#IGHV4-39: mild186_Patient3 has 1 cell
+vg <- BCR[,BCR$v_gene == "IGHV4-39"]
+vg$sample <-  droplevels(vg$sample)
+vg <- ScaleData(vg)
+mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-IGHV4-39.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                       genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV4-39.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+           title = "IGHV4-39",
+           y = "Count", orderBy = "P.value"))
+
+#IGHV4-34: severe123_Patient5  has 2 cells
+vg <- BCR[,BCR$v_gene == "IGHV4-34"]
+vg$sample <-  droplevels(vg$sample)
+vg <- ScaleData(vg)
+mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-IGHV4-34.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                       genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV4-34.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+           title = "IGHV4-34",
+           y = "Count", orderBy = "P.value"))
+
+#IGHV3-23: mild186_Patient3 has 1 cell
+vg <- BCR[,BCR$v_gene == "IGHV3-23"]
+vg$sample <-  droplevels(vg$sample)
+vg <- ScaleData(vg)
+mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58, only.pos = T) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-IGHV3-23.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021", #None significant
+                       genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV3-23.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+           title = "IGHV3-23",
+           y = "Count", orderBy = "P.value"))
+
+#IGHV3-33: 
+vg <- BCR[,BCR$v_gene == "IGHV3-33"]
+vg$sample <-  droplevels(vg$sample)
+vg <- ScaleData(vg)
+mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58, only.pos = T) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-IGHV3-33.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                       genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV3-33.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+           title = "IGHV3-33",
+           y = "Count", orderBy = "P.value"))
+
+#IGHV3-30: moderate272_Patient1 has 2 cells, moderate124_Patient6 2
+vg <- BCR[,BCR$v_gene == "IGHV3-30"]
+vg$sample <-  droplevels(vg$sample)
+vg <- ScaleData(vg)
+mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58, only.pos = T) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-IGHV3-30.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                       genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV3-30.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+           title = "IGHV3-33",
+           y = "Count", orderBy = "P.value"))
+
+#IGHV3-48: moderate138_Patient5 has 2 cells
+vg <- BCR[,BCR$v_gene == "IGHV3-48"]
+vg$sample <-  droplevels(vg$sample)
+vg <- ScaleData(vg)
+mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58, only.pos = T) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-IGHV3-48.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021", #None statistically significant
+                       genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV3-48.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+           title = "IGHV3-48",
+           y = "Count", orderBy = "P.value"))
+
+#IGHV4-59: 
+vg <- BCR[,BCR$v_gene == "IGHV4-59"]
+vg$sample <-  droplevels(vg$sample)
+vg <- ScaleData(vg)
+mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-IGHV4-59.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                    genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV4-59.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+                         title = "IGHV4-59",
+                         y = "Count", orderBy = "P.value"))
+
+#IGHV1-69D: moderate303_Patient2 has 2 cells
+vg <- BCR[,BCR$v_gene == "IGHV1-69D"]
+vg$sample <-  droplevels(vg$sample)
+vg <- ScaleData(vg)
+mrk <- FindAllMarkers(vg, min.pct = 0.25, logfc.threshold = 0.58) %>%
+  subset(p_val_adj < 0.05) %>%
+  arrange(p_val_adj)
+ggsave(filename = "graphs/DEGs-IGHV1-69D.jpeg", dpi = "print",
+       height = 10, width = 15, units = "in",
+       plot = DoHeatmap(vg, features = rownames(mrk), group.by = "sample"))
+enriched <- enrichr(databases = "GO_Biological_Process_2021",
+                    genes = rownames(mrk))
+ggsave(filename = "graphs/enrichment-IGHV1-69D.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enriched[[1]], numChar = 70, 
+                         title = "IGHV1-69D",
+                         y = "Count", orderBy = "P.value"))
+
 
 #Patient1 - IGHV3-33:
 BCR$compare <- 0
@@ -461,6 +660,97 @@ for (i in levels(factor(BCR$azimuthNames))) {
   }
   
 }
+
+################################Wilcoxon Test Method############################
+
+BCR <- readRDS("05-BCR-combined.rds")
+pt1 <- BCR[,BCR$patient == "Patient 1" & BCR$v_gene == "IGHV1-18"]
+
+# perform a fast Wilcoxon rank sum test with presto
+
+wlx.mrk.pt1 <- wilcoxauc(pt1, 'sample', c("moderate272_Patient1", "critical293_Patient1"),
+                               seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+head(wlx.mrk.pt1)
+
+# we have all the genes for each cluster
+dplyr::count(wlx.mrk.pt1, group)
+
+# summarize the top abundant marker features for each group
+top_markers(wlx.mrk.pt1)
+
+write.table(top_markers(wlx.mrk.pt1), file = "top-wilcox-markers-pt1.tsv", sep = "\t", col.names = NA)
+
+# rank genes using rrho algorithm
+ranked.genes <- wlx.mrk.pt1 %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+#head(n = 10)
+
+# save found markers as exportable table
+write.table(ranked.genes,
+            file = "ranked-genes-pt1.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+# choose top upregulated genes
+topUpmod <- ranked.genes %>% 
+  dplyr::filter(group == "moderate272_Patient1") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDownmod <- ranked.genes %>%
+  dplyr::filter(group == "moderate272_Patient1") %>%
+  filter(rank < 0) %>%
+  top_n(50, wt=-padj)
+
+topUpcrit <- ranked.genes %>% 
+  dplyr::filter(group == "critical293_Patient1") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDowncrit <- ranked.genes %>% 
+  dplyr::filter(group == "critical293_Patient1") %>%
+  filter(rank < 0) %>% 
+  top_n(50, wt=-padj)
+
+
+topPathways <- bind_rows(topUpmod, topDownmod, topUpcrit, topDowncrit) #%>% arrange(-rank)
+
+# save found markers as exportable table
+write.table(topPathways,
+            file = "ranked-genes-rrho-pt1.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+top10 <- topPathways %>% group_by(group) %>% subset(padj < 0.05)
+
+# create a scale.data slot for the selected genes in subset data
+alldata <- ScaleData(object = subset(x = pt1, subset = 
+                                       sample == c('moderate272_Patient1', 'critical293_Patient1')), 
+                     features = as.character(unique(top10$feature)), assay = "RNA")
+
+DefaultAssay(alldata) <- "RNA"
+
+ggsave(filename = "graphs/wilcox-rrho.jpeg", dpi = "print",
+       width = 15, height = 10,
+       plot = DoHeatmap(alldata, 
+          features = unique(top10$feature), group.by = "sample",
+          size = 2, raster=TRUE, label=FALSE) + 
+  theme(axis.text.y = element_text(size = 5)))
+
+
+
+
+
+
 
 ################################Gene Ontology Analysis##########################
 
