@@ -664,7 +664,11 @@ for (i in levels(factor(BCR$azimuthNames))) {
 ################################Wilcoxon Test Method############################
 
 BCR <- readRDS("05-BCR-combined.rds")
-pt1 <- BCR[,BCR$patient == "Patient 1" & BCR$v_gene == "IGHV1-18"]
+
+#For Patient 1:
+pt1 <- BCR[,BCR$patient == "Patient 1"]
+pt1$sample <- droplevels(pt1$sample)
+DefaultAssay(pt1) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
@@ -730,22 +734,479 @@ write.table(topPathways,
             row.names = TRUE, 
             col.names = NA)
 
-top10 <- topPathways %>% group_by(group) %>% subset(padj < 0.05)
+top <- topPathways %>% group_by(group) %>% subset(padj < 0.05)
 
 # create a scale.data slot for the selected genes in subset data
-alldata <- ScaleData(object = subset(x = pt1, subset = 
-                                       sample == c('moderate272_Patient1', 'critical293_Patient1')), 
-                     features = as.character(unique(top10$feature)), assay = "RNA")
+alldata <- ScaleData(object = pt1, 
+                     features = as.character(unique(top$feature), assay = "RNA"))
 
 DefaultAssay(alldata) <- "RNA"
 
-ggsave(filename = "graphs/wilcox-rrho.jpeg", dpi = "print",
+ggsave(filename = "graphs/wilcox-rrho-pt1.jpeg", dpi = "print",
        width = 15, height = 10,
        plot = DoHeatmap(alldata, 
-          features = unique(top10$feature), group.by = "sample",
+          features = unique(top$feature), group.by = "sample",
           size = 2, raster=TRUE, label=FALSE) + 
-  theme(axis.text.y = element_text(size = 5)))
+  theme(axis.text.y = element_text(size = 7)))
 
+# Perform enrichment on top 10 genes enriched in Patient 1:
+enrich.topUpcrit1 <- enrichr(genes = topUpcrit$feature, 
+                               databases = "GO_Biological_Process_2021")
+enrich.topUpmod1 <- enrichr(genes = topUpmod$feature, 
+                               databases = "GO_Biological_Process_2021")
+
+
+ggsave(filename = "graphs/enrichment-pt1-wlx-mod.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpmod1[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 1 moderate"))
+
+ggsave(filename = "graphs/enrichment-pt1-wlx-crit.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpcrit1[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 1 critical"))
+
+#For Patient 2:
+pt2 <- BCR[,BCR$patient == "Patient 2"]
+pt2$sample <- droplevels(pt2$sample)
+DefaultAssay(pt2) <- "RNA"
+
+# perform a fast Wilcoxon rank sum test with presto
+
+wlx.mrk.pt2 <- wilcoxauc(pt2, 'sample', c("moderate303_Patient2", "critical308_Patient2"),
+                               seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+head(wlx.mrk.pt2)
+
+# we have all the genes for each cluster
+dplyr::count(wlx.mrk.pt2, group)
+
+# summarize the top abundant marker features for each group
+top_markers(wlx.mrk.pt2)
+
+write.table(top_markers(wlx.mrk.pt2), file = "top-wilcox-markers-pt2.tsv", sep = "\t", col.names = NA)
+
+# rank genes using rrho algorithm
+ranked.genes <- wlx.mrk.pt2 %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+#head(n = 10)
+
+# save found markers as exportable table
+write.table(ranked.genes,
+            file = "ranked-genes-pt2.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+# choose top upregulated genes
+topUpmod <- ranked.genes %>% 
+  dplyr::filter(group == "moderate303_Patient2") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDownmod <- ranked.genes %>%
+  dplyr::filter(group == "moderate303_Patient2") %>%
+  filter(rank < 0) %>%
+  top_n(50, wt=-padj)
+
+topUpcrit <- ranked.genes %>% 
+  dplyr::filter(group == "critical308_Patient2") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDowncrit <- ranked.genes %>% 
+  dplyr::filter(group == "critical308_Patient2") %>%
+  filter(rank < 0) %>% 
+  top_n(50, wt=-padj)
+
+
+topPathways <- bind_rows(topUpmod, topDownmod, topUpcrit, topDowncrit) #%>% arrange(-rank)
+
+# save found markers as exportable table
+write.table(topPathways,
+            file = "ranked-genes-rrho-pt2.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+top <- topPathways %>% group_by(group)
+
+# create a scale.data slot for the selected genes in subset data
+alldata <- ScaleData(object = pt2, 
+                     features = as.character(unique(top$feature), assay = "RNA"))
+
+DefaultAssay(alldata) <- "RNA"
+
+ggsave(filename = "graphs/wilcox-rrho-pt2.jpeg", dpi = "print",
+       width = 15, height = 10,
+       plot = DoHeatmap(alldata, 
+          features = unique(top$feature), group.by = "sample",
+          size = 2, raster=TRUE, label=FALSE) + 
+  theme(axis.text.y = element_text(size = 7)))
+
+# Perform enrichment on top genes enriched in Patient 2
+enrich.topUpcrit2 <- enrichr(genes = topUpcrit$feature, 
+                               databases = "GO_Biological_Process_2021")
+enrich.topUpmod2 <- enrichr(genes = topUpmod$feature, 
+                               databases = "GO_Biological_Process_2021")
+
+
+ggsave(filename = "graphs/enrichment-pt2-wlx-crit.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpcrit2[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 2 critical"))
+
+ggsave(filename = "graphs/enrichment-pt2-wlx-mod.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpmod2[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 2 moderate"))
+
+
+rm(list=setdiff(ls(), "BCR"))
+#For Patient 3:
+pt3 <- BCR[,BCR$patient == "Patient 3"]
+pt3$sample <- droplevels(pt3$sample)
+DefaultAssay(pt3) <- "RNA"
+
+# perform a fast Wilcoxon rank sum test with presto
+
+wlx.mrk.pt3 <- wilcoxauc(pt3, 'sample', c("mild186_Patient3", "critical213_Patient3"),
+                               seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+head(wlx.mrk.pt3)
+
+# we have all the genes for each cluster
+dplyr::count(wlx.mrk.pt3, group)
+
+# summarize the top abundant marker features for each group
+top_markers(wlx.mrk.pt3)
+
+write.table(top_markers(wlx.mrk.pt3), file = "top-wilcox-markers-pt3.tsv", sep = "\t", col.names = NA)
+
+# rank genes using rrho algorithm
+ranked.genes <- wlx.mrk.pt3 %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+#head(n = 10)
+
+# save found markers as exportable table
+write.table(ranked.genes,
+            file = "ranked-genes-pt3.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+# choose top upregulated genes
+topUpmod <- ranked.genes %>% 
+  dplyr::filter(group == "mild186_Patient3") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDownmod <- ranked.genes %>%
+  dplyr::filter(group == "mild186_Patient3") %>%
+  filter(rank < 0) %>%
+  top_n(50, wt=-padj)
+
+topUpcrit <- ranked.genes %>% 
+  dplyr::filter(group == "critical213_Patient3") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDowncrit <- ranked.genes %>% 
+  dplyr::filter(group == "critical213_Patient3") %>%
+  filter(rank < 0) %>% 
+  top_n(50, wt=-padj)
+
+
+topPathways <- bind_rows(topUpmod, topDownmod, topUpcrit, topDowncrit) #%>% arrange(-rank)
+
+# save found markers as exportable table
+write.table(topPathways,
+            file = "ranked-genes-rrho-pt3.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+top <- topPathways %>% group_by(group) 
+
+# create a scale.data slot for the selected genes in subset data
+alldata <- ScaleData(object = pt3, 
+                     features = as.character(unique(top$feature), assay = "RNA"))
+
+DefaultAssay(alldata) <- "RNA"
+
+ggsave(filename = "graphs/wilcox-rrho-pt3.jpeg", dpi = "print",
+       width = 15, height = 10,
+       plot = DoHeatmap(alldata, 
+          features = unique(top$feature), group.by = "sample",
+          size = 2, raster=TRUE, label=FALSE) + 
+  theme(axis.text.y = element_text(size = 7)))
+
+# Perform enrichment on top 10 genes enriched in Patient 3:
+enrich.topUpcrit3 <- enrichr(genes = topUpcrit$feature, 
+                               databases = "GO_Biological_Process_2021")
+enrich.topUpmod3 <- enrichr(genes = topUpmod$feature, 
+                               databases = "GO_Biological_Process_2021")
+
+
+ggsave(filename = "graphs/enrichment-pt3-wlx-crit.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpcrit3[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 3 critical"))
+
+ggsave(filename = "graphs/enrichment-pt3-wlx-mod.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpmod3[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 3 moderate"))
+
+
+rm(list=setdiff(ls(), "BCR"))
+#For Patient 4:
+pt4 <- BCR[,BCR$patient == "Patient 4"]
+pt4$sample <- droplevels(pt4$sample)
+DefaultAssay(pt4) <- "RNA"
+
+# perform a fast Wilcoxon rank sum test with presto
+
+wlx.mrk.pt4 <- wilcoxauc(pt4, 'sample', c("mild227_Patient4", "critical238_Patient4"),
+                               seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+head(wlx.mrk.pt4)
+
+# we have all the genes for each cluster
+dplyr::count(wlx.mrk.pt4, group)
+
+# summarize the top abundant marker features for each group
+top_markers(wlx.mrk.pt4)
+
+write.table(top_markers(wlx.mrk.pt4), file = "top-wilcox-markers-pt4.tsv", sep = "\t", col.names = NA)
+
+# rank genes using rrho algorithm
+ranked.genes <- wlx.mrk.pt4 %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+#head(n = 10)
+
+# save found markers as exportable table
+write.table(ranked.genes,
+            file = "ranked-genes-pt4.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+# choose top upregulated genes
+topUpmod <- ranked.genes %>% 
+  dplyr::filter(group == "mild227_Patient4") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDownmod <- ranked.genes %>%
+  dplyr::filter(group == "mild227_Patient4") %>%
+  filter(rank < 0) %>%
+  top_n(50, wt=-padj)
+
+topUpcrit <- ranked.genes %>% 
+  dplyr::filter(group == "critical238_Patient4") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDowncrit <- ranked.genes %>% 
+  dplyr::filter(group == "critical238_Patient4") %>%
+  filter(rank < 0) %>% 
+  top_n(50, wt=-padj)
+
+
+topPathways <- bind_rows(topUpmod, topDownmod, topUpcrit, topDowncrit) #%>% arrange(-rank)
+
+# save found markers as exportable table
+write.table(topPathways,
+            file = "ranked-genes-rrho-pt4.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+top <- topPathways %>% group_by(group) 
+
+# create a scale.data slot for the selected genes in subset data
+alldata <- ScaleData(object = pt4, 
+                     features = as.character(unique(top$feature), assay = "RNA"))
+
+DefaultAssay(alldata) <- "RNA"
+
+ggsave(filename = "graphs/wilcox-rrho-pt4.jpeg", dpi = "print",
+       width = 15, height = 10,
+       plot = DoHeatmap(alldata, 
+          features = unique(top$feature), group.by = "sample",
+          size = 2, raster=TRUE, label=FALSE) + 
+  theme(axis.text.y = element_text(size = 7)))
+
+# Perform enrichment on top 10 genes enriched in Patient 4:
+enrich.topUpcrit4 <- enrichr(genes = topUpcrit$feature, 
+                               databases = "GO_Biological_Process_2021")
+enrich.topUpmod4 <- enrichr(genes = topUpmod$feature, 
+                               databases = "GO_Biological_Process_2021")
+
+
+ggsave(filename = "graphs/enrichment-pt4-wlx-crit.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpcrit4[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 4 critical"))
+
+ggsave(filename = "graphs/enrichment-pt4-wlx-mod.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpmod4[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 4 moderate"))
+
+
+
+rm(list=setdiff(ls(), "BCR"))
+
+#Patient 1 vs. all:
+DefaultAssay(BCR) <- "RNA"
+
+# perform a fast Wilcoxon rank sum test with presto
+BCR$comp <- 0
+BCR$comp[BCR$patient == "Patient 1"] <- 1
+
+wlx.mrk <- wilcoxauc(BCR, "comp", c(1,0),
+                               seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+head(wlx.mrk)
+
+# we have all the genes for each cluster
+dplyr::count(wlx.mrk, group)
+
+# summarize the top abundant marker features for each group
+top_markers(wlx.mrk)
+
+write.table(top_markers(wlx.mrk), file = "top-wilcox-markers-pt1-vs-all.tsv", sep = "\t", col.names = NA)
+
+# rank genes using rrho algorithm
+ranked.genes <- wlx.mrk %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+#head(n = 10)
+
+# save found markers as exportable table
+write.table(ranked.genes,
+            file = "ranked-genes-pt1-vs-all.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+# choose top upregulated genes
+topUppt1 <- ranked.genes %>% 
+  dplyr::filter(group == 1) %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDownpt1 <- ranked.genes %>%
+  dplyr::filter(group == 1) %>%
+  filter(rank < 0) %>%
+  top_n(50, wt=-padj)
+
+topUpother <- ranked.genes %>% 
+  dplyr::filter(group == 0) %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+
+topDownother <- ranked.genes %>% 
+  dplyr::filter(group == 0) %>%
+  filter(rank < 0) %>% 
+  top_n(50, wt=-padj)
+
+
+topPathways <- bind_rows(topUppt1, topDownpt1, topUpother, topDownother) #%>% arrange(-rank)
+
+# save found markers as exportable table
+write.table(topPathways,
+            file = "ranked-genes-rrho-pt1-vs-all.tsv", 
+            sep="\t", 
+            append = FALSE, 
+            quote=FALSE, 
+            row.names = TRUE, 
+            col.names = NA)
+
+top <- topPathways %>% group_by(group) 
+
+# create a scale.data slot for the selected genes in subset data
+alldata <- ScaleData(object = BCR, 
+                     features = as.character(unique(top$feature), assay = "RNA"))
+
+DefaultAssay(alldata) <- "RNA"
+
+ggsave(filename = "graphs/wilcox-rrho-pt1-vs-all.jpeg", dpi = "print",
+       width = 15, height = 10,
+       plot = DoHeatmap(alldata, 
+          features = unique(top$feature), group.by = "patient",
+          size = 2, raster=TRUE, label=FALSE) + 
+  theme(axis.text.y = element_text(size = 7)))
+
+# Perform enrichment on top genes enriched in Patient 1:
+enrich.topUppt1 <- enrichr(genes = topUppt1$feature, 
+                               databases = "GO_Biological_Process_2021")
+enrich.topUpother <- enrichr(genes = topUpother$feature, 
+                               databases = "GO_Biological_Process_2021")
+
+
+ggsave(filename = "graphs/enrichment-pt1-vs-all-wlx.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUppt1[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 1 vs Others"))
+
+ggsave(filename = "graphs/enrichment-all-vs-pt1-wlx.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpother[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Others vs Patient 1"))
 
 
 
