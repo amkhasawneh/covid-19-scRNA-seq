@@ -139,7 +139,7 @@ clonalOverlap(df = B.combined, cloneCall = "gene", method = "overlap") +
   theme(axis.text = element_text(size = 12), axis.text.x = element_text(angle = 90))
 
 
-clonalDiversity(df = B.combined, cloneCall = "gene", group = "sample")
+clonalDiversity(df = B.combined[c(11, 5)], cloneCall = "gene", group = "sample")
 clonalDiversity(df = B.combined, cloneCall = "gene", group = "sample", exportTable = T) %>%
   write.table("clonal-diversity.tsv", sep = "\t", row.names = F)
 
@@ -207,6 +207,15 @@ BCR <- readRDS("05-BCR-combined.rds")
 heavy.chains <- BCR@meta.data %>%
   group_by(v_gene, j_gene, c_gene, azimuthNames, patient, severity) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() %>% na.omit()
+
+#V gene diversity, using the Inverse Simpson index:
+div <- data.frame()
+for (i in levels(BCR$sample)) {
+  v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table, index = "invsimpson"))
+  div <- rbind(div, v.div)
+  rownames(div) <- div[,1]
+  colnames(div) <- c("sample", "Inv.Simpson.score")
+  }
 
 ggplot(data = heavy.chains[heavy.chains$n > 1,], aes(x= v_gene, y= j_gene, color = azimuthNames, size = n)) +
   geom_count(na.rm = T) +
