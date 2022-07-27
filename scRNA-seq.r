@@ -147,6 +147,7 @@ metadata$patient[metadata$patient == "Patient6"] <- "Patient 6"
 
 #Creating an outcome column:
 metadata$outcome <- "Recovered"
+metadata$outcome[metadata$severity == "healthy"] <- "Healthy"
 metadata$outcome[metadata$patient == "Patient1" | metadata$patient == "Patient2" | metadata$patient == "Patient3"] <- "Deceased"
 
 #Creating a sample collection date column:
