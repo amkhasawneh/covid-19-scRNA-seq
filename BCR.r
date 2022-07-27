@@ -641,24 +641,25 @@ FindMarkers(object = BCR, ident.1 = "IGHV1-18.IGHJ3..IGHA1_IGLV1-47.IGLJ2.IGLC2"
 #V gene diversity, using the Inverse Simpson index:
 div <- data.frame()
 for (i in levels(BCR$sample)) {
-  v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table, index = "invsimpson"), levels(factor(BCR$outcome[BCR$sample == i])))
+  v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])))
   div <- rbind(div, v.div)
   rownames(div) <- div[,1]
-  colnames(div) <- c("sample", "Inv.Simpson.score", "outcome")
+  colnames(div) <- c("sample", "Shannon.score", "outcome")
 }
 
 #Comparing diversity between outcome groups:
-#Recovered vs. Healthy (p-value = 0.02424):
-wilcox.test(x = as.numeric(div$Inv.Simpson.score[div$outcome == "Recovered"]), 
-            y = as.numeric(div$Inv.Simpson.score[div$outcome == "Healthy"]))
-#Recovered vs. Deceased (p-value = 0.662):
-wilcox.test(x = as.numeric(div$Inv.Simpson.score[div$outcome == "Recovered"]), 
-            y = as.numeric(div$Inv.Simpson.score[div$outcome == "Deceased"]))
+#Recovered vs. Healthy (p-value = 0.01212):
+wilcox.test(x = as.numeric(div$Shannon.score[div$outcome == "Recovered"]), 
+            y = as.numeric(div$Shannon.score[div$outcome == "Healthy"]))
+#Recovered vs. Deceased (p-value = 0.7546):
+wilcox.test(x = as.numeric(div$Shannon.score[div$outcome == "Recovered"]), 
+            y = as.numeric(div$Shannon.score[div$outcome == "Deceased"]))
 #Deceased vs. Healthy (p-value = 0.02381):
-wilcox.test(x = as.numeric(div$Inv.Simpson.score[div$outcome == "Deceased"]), 
-            y = as.numeric(div$Inv.Simpson.score[div$outcome == "Healthy"]))
-#Healhty vs. not Healthy(p-value = 0.005882):
-wilcox.test(x = as.numeric(div$Inv.Simpson.score[div$outcome == "Healthy"]), 
-            y = as.numeric(div$Inv.Simpson.score[div$outcome != "Healthy"]))
+wilcox.test(x = as.numeric(div$Shannon.score[div$outcome == "Deceased"]), 
+            y = as.numeric(div$Shannon.score[div$outcome == "Healthy"]))
+#Healhty vs. not Healthy(p-value = 0.002941):
+wilcox.test(x = as.numeric(div$Shannon.score[div$outcome == "Healthy"]), 
+            y = as.numeric(div$Shannon.score[div$outcome != "Healthy"]))
 #I think we can conclude that there is no difference between recovered and dead patients,
-#but that healthy controls have significantly higher diversity.
+#but that healthy controls have significantly higher diversity, in both Inverse Simpson,
+#and Shannon indexes.
