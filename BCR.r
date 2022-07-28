@@ -178,6 +178,8 @@ BCR$v_gene <- sub("(NA)", NA, BCR$v_gene)
 BCR$j_gene <- vapply(strsplit(BCR$CTgene, "[.]"), "[", "", 2)
 BCR$j_gene <- gsub("(.*[KL].*)", NA, BCR$j_gene)
 BCR$c_gene <- vapply(strsplit(vapply(strsplit(BCR$CTgene, "[_]"), "[", "", 1), "[.]"), "[", "", 4)
+BCR$v.j <- paste(BCR$v_gene, BCR$j_gene, sep = ".")
+BCR$v.j[BCR$v.j == "NA.NA"] <- NA
 
 saveRDS(BCR, "05-BCR-combined.rds")
 
@@ -307,20 +309,23 @@ BCR@meta.data[complete.cases(BCR@meta.data),] %>%
 
 #V-J gene usage heatmaps:
 #For all:
-BCR@meta.data[complete.cases(BCR@meta.data),] %>%
-  group_by(v_gene, j_gene) %>% dplyr::count() %>% spread(key = v_gene, value = n) %>% as.data.frame() -> matrix
+BCR@meta.data %>%
+  group_by(v_gene, j_gene) %>% dplyr::count() %>% na.omit() %>%
+  mutate(v_gene = vapply(strsplit(v_gene, "[V]"), "[", "", 2),
+         j_gene = vapply(strsplit(j_gene, "[J]"), "[", "", 2)) %>%
+  spread(key = v_gene, value = n) %>% as.data.frame() -> matrix
 rownames(matrix) <-  matrix$j_gene
 matrix$j_gene <- NULL
 matrix <- as.matrix(matrix)
 matrix[is.na(matrix)] <- 0
-ggsave(filename = paste0("v-j-heatmap.jpeg"), path = "./graphs",
+ggsave(filename = paste0("v-j-heatmap-all.jpeg"), path = "./graphs",
        height = 6 , width = 26,
-       plot = pheatmap(matrix, cluster_cols = F, cluster_rows = F,main = "All",
+       plot = pheatmap(matrix, cluster_cols = F, cluster_rows = F,
                        cellwidth = 30, cellheight = 30, name = "Frequency", fontsize = 20))
 
 #For each severity group:
 for (i in levels(factor(BCR$severity))) {
-  BCR@meta.data[complete.cases(BCR@meta.data) & BCR$severity == i,] %>%
+  BCR@meta.data %>%
     group_by(v_gene, j_gene) %>% dplyr::count() %>% spread(key = j_gene, value = n) %>% as.data.frame() -> matrix
   rownames(matrix) <-  matrix$v_gene
   matrix$v_gene <- NULL
@@ -334,9 +339,10 @@ for (i in levels(factor(BCR$severity))) {
 }
 
 #For each sample:
-for (i in levels(factor(BCR@meta.data[complete.cases(BCR$sample),]$sample))) {
-  BCR@meta.data[complete.cases(BCR@meta.data) & BCR$sample == i,] %>%
-    group_by(v_gene, j_gene) %>% dplyr::count() %>% spread(key = j_gene, value = n) %>% as.data.frame() -> matrix
+for (i in levels(factor(BCR@meta.data$sample))) {
+  BCR@meta.data[BCR$sample == i,] %>%
+    group_by(v_gene, j_gene) %>% dplyr::count() %>% na.omit() %>%
+    spread(key = j_gene, value = n) %>% as.data.frame() -> matrix
   rownames(matrix) <-  matrix$v_gene
   matrix$v_gene <- NULL
   matrix <- as.matrix(matrix)
@@ -345,7 +351,6 @@ for (i in levels(factor(BCR@meta.data[complete.cases(BCR$sample),]$sample))) {
   ggsave(filename = paste0("v-j-heatmap-", i, ".jpeg"), path = "./graphs",
          height = 22, width = 10,
          plot = pheatmap(matrix, cluster_cols = F, cluster_rows = F,
-                         main = paste0(BCR$patient[BCR$sample == i], " ", BCR$severity[BCR$sample == i]), 
                          cellwidth = 30, cellheight = 30, name = "Frequency", fontsize = 20))
 }
 
@@ -637,29 +642,57 @@ FindMarkers(object = BCR, ident.1 = "IGHV1-18.IGHJ3..IGHA1_IGLV1-47.IGLJ2.IGLC2"
 
 ################################Diversity Testing###############################
 
-
+BCR$v.j <- paste(BCR$v_gene, BCR$j_gene, sep = ".")
+BCR$v.j[BCR$v.j == "NA.NA"] <- NA
 #V gene diversity, using the Inverse Simpson index:
-div <- data.frame()
+diversity <- data.frame()
 for (i in levels(BCR$sample)) {
   v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])))
-  div <- rbind(div, v.div)
-  rownames(div) <- div[,1]
-  colnames(div) <- c("sample", "Shannon.score", "outcome")
+  diversity <- rbind(diversity, v.div)
+  rownames(diversity) <- diversity[,1]
+  colnames(diversity) <- c("sample", "Shannon.score", "outcome")
 }
 
 #Comparing diversity between outcome groups:
 #Recovered vs. Healthy (p-value = 0.01212):
-wilcox.test(x = as.numeric(div$Shannon.score[div$outcome == "Recovered"]), 
-            y = as.numeric(div$Shannon.score[div$outcome == "Healthy"]))
+wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Recovered"]), 
+            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]))
 #Recovered vs. Deceased (p-value = 0.7546):
-wilcox.test(x = as.numeric(div$Shannon.score[div$outcome == "Recovered"]), 
-            y = as.numeric(div$Shannon.score[div$outcome == "Deceased"]))
+wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Recovered"]), 
+            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Deceased"]))
 #Deceased vs. Healthy (p-value = 0.02381):
-wilcox.test(x = as.numeric(div$Shannon.score[div$outcome == "Deceased"]), 
-            y = as.numeric(div$Shannon.score[div$outcome == "Healthy"]))
-#Healhty vs. not Healthy(p-value = 0.002941):
-wilcox.test(x = as.numeric(div$Shannon.score[div$outcome == "Healthy"]), 
-            y = as.numeric(div$Shannon.score[div$outcome != "Healthy"]))
+wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Deceased"]), 
+            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]))
+#Healthy vs. not Healthy(p-value = 0.002941):
+wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]), 
+            y = as.numeric(diversity$Shannon.score[diversity$outcome != "Healthy"]))
 #I think we can conclude that there is no difference between recovered and dead patients,
 #but that healthy controls have significantly higher diversity, in both Inverse Simpson,
 #and Shannon indexes.
+#Doing the same comparison with V-J combinations, or J genes alone, yields less
+#insight (no significant differences).
+
+#Making the jitter graph:
+diversity$outcome <- factor(diversity$outcome, levels = c("Deceased", "Recovered", "Healthy"))
+plot <- ggplot(diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
+  geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = sample)) +
+  facet_wrap(~outcome) +
+  ylab("Shannon Index Score") +  theme_classic() + 
+  theme(axis.title.x = element_blank(), 
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        legend.text = element_text(size = 20),
+        strip.text = element_text(size = 15))
+ggsave(filename = "diversity-jitter.jpeg", path = "./graphs/",
+       width = 15, height = 10, dpi = "retina", 
+       plot = plot)
+
+#Analyzing clonotypes not unlike the paper by Jin et al (doi: 10.1093/bib/bbab192):
+clonotypes <- BCR@meta.data %>%
+  group_by(CTgene, patient, severity, sample) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  as.data.frame() %>% na.omit()
+clonotypes[clonotypes$n > 2,] %>% nrow()
+clonotypes %>% nrow()
+
+heavy.chains <- BCR@meta.data[!is.na(BCR$v_gene),] %>%
+  group_by(v_gene, j_gene) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  as.data.frame() 
