@@ -1,0 +1,42 @@
+Exp. 001			                                   		                	  2022.07.27	        　　　　　　　　
+
+Made a new file (20220727-COVID-19-manuscript.docx) for the manuscript.
+TCR data is not included in this file!
+Looked up some more references about IGHV genes of interest.
+Found this very important part in Jin et al:
+
+Statistical analysis
+Fisher’s exact test was used to assess differences in usage of V and J gene segments and the proportion of Ig isotypes between COVID-19 patients and healthy controls. Wilcoxon’s signed-rank test was used to analyze differences in clonal diversity, CDR3 length and SHM rate among different groups. The significance thresholds were P < 0.05. All statistical analyses were implemented with R software (Version 3.5.1).
+
+
+Tasks:
+Apply the same statistical procedures to our data. They make a lot of sense!
+•	Fisher’s exact test for V–J usage between the three groups (healthy, deceased, recovered).
+•	Fisher’s exact test for Ig isotypes between the three groups.
+•	Wilcoxon’s test for clonal diversity.
+
+Continue on with the report, including differential gene expression analysis results.
+
+
+ 
+Exp. 002			                                   		                	  2022.07.28
+
+Wilcoxon’s test, applied to diversity scores of V gene usage in the individual samples, gave the following results:
+•	We can conclude that there is no difference between recovered and dead patients,
+•	Healthy controls have significantly higher diversity, in both Inverse Simpson, and Shannon indexes.
+•	Doing the same comparison with V–J combinations, or J genes alone, yields less insight (no significant differences).
+
+
+I have also remade the BCR V–J heatmaps, removing the part with the complete.cases() function.
+
+I have written some stuff in the manuscript skeleton:
+•	Added citations for other studies that found similar IGHV genes.
+•	Added information about IGHV1-18, and found interesting findings about it in other papers.
+
+Tasks:
+•	Fisher’s exact test for V–J usage between the three groups (healthy, deceased, recovered), as well as the healthy group vs. the others.
+•	Fisher’s exact test for Ig isotypes between the three groups, and healthy vs. not-so.
+•	Continue writing: include more about IGHV1-18; include diversity information; maybe Fisher’s test results too.
+
+
+
