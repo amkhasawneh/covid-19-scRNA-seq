@@ -644,7 +644,7 @@ FindMarkers(object = BCR, ident.1 = "IGHV1-18.IGHJ3..IGHA1_IGLV1-47.IGLJ2.IGLC2"
 
 BCR$v.j <- paste(BCR$v_gene, BCR$j_gene, sep = ".")
 BCR$v.j[BCR$v.j == "NA.NA"] <- NA
-#V gene diversity, using the Inverse Simpson index:
+#V gene diversity, using the Shannon index:
 diversity <- data.frame()
 for (i in levels(BCR$sample)) {
   v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])))
@@ -682,13 +682,13 @@ plot <- ggplot(diversity, aes(x = sample, y = as.numeric(Shannon.score))) +
         axis.text.x = element_blank(), axis.ticks.x = element_blank(),
         legend.text = element_text(size = 20),
         strip.text = element_text(size = 15))
-ggsave(filename = "diversity-jitter.jpeg", path = "./graphs/",
+ggsave(filename = "clonotype-diversity-jitter.jpeg", path = "./graphs/",
        width = 15, height = 10, dpi = "retina", 
        plot = plot)
 
 #Analyzing clonotypes not unlike the paper by Jin et al (doi: 10.1093/bib/bbab192):
 clonotypes <- BCR@meta.data %>%
-  group_by(CTgene, patient, severity, sample) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  group_by(CTgene, sample) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() %>% na.omit()
 clonotypes[clonotypes$n > 2,] %>% nrow()
 clonotypes %>% nrow()
@@ -696,3 +696,53 @@ clonotypes %>% nrow()
 heavy.chains <- BCR@meta.data[!is.na(BCR$v_gene),] %>%
   group_by(v_gene, j_gene) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() 
+
+cdr3 <- BCR@meta.data[!is.na(BCR$v_gene),] %>%
+  group_by(CTaa, sample) %>% dplyr::count() %>% arrange(desc(n)) %>%
+  as.data.frame()
+
+
+
+################################Isotype analysis################################
+
+isotype <- BCR@meta.data[!is.na(BCR$c_gene),] %>%
+  group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  as.data.frame() 
+
+#Isotype diversity, using the Shannon index:
+diversity <- data.frame()
+for (i in levels(BCR$sample)) {
+  c.div <- c(i, diversity(BCR[,BCR$sample == i]$c_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])))
+  diversity <- rbind(diversity, c.div)
+  rownames(diversity) <- diversity[,1]
+  colnames(diversity) <- c("sample", "Shannon.score", "outcome")
+}
+#Comparing diversity between outcome groups:
+#Recovered vs. Healthy (p-value = 0.01212):
+wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Recovered"]), 
+            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]))
+#Recovered vs. Deceased (p-value = 0.1419):
+wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Recovered"]), 
+            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Deceased"]))
+#Deceased vs. Healthy (p-value = 0.04762):
+wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Deceased"]), 
+            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]))
+#Healthy vs. not Healthy(p-value = 0.005882):
+wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]), 
+            y = as.numeric(diversity$Shannon.score[diversity$outcome != "Healthy"]))
+#I think we can conclude that there is no difference between recovered and dead patients,
+#but that healthy controls have significantly lower diversity in the Shannon index.
+
+#Making the jitter graph:
+diversity$outcome <- factor(diversity$outcome, levels = c("Deceased", "Recovered", "Healthy"))
+plot <- ggplot(diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
+  geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = sample)) +
+  facet_wrap(~outcome) +
+  ylab("Shannon Index Score") +  theme_classic() + 
+  theme(axis.title.x = element_blank(), 
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        legend.text = element_text(size = 20),
+        strip.text = element_text(size = 15))
+ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
+       width = 15, height = 10, dpi = "retina", 
+       plot = plot)
