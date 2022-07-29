@@ -31,10 +31,9 @@ moderate272 <- read.csv("from_cellranger/moderate272/vdj_b/filtered_contig_annot
 moderate303 <- read.csv("from_cellranger/moderate303/vdj_b/filtered_contig_annotations.csv")
 severe122 <- read.csv("from_cellranger/severe122/vdj_b/filtered_contig_annotations.csv")
 severe123 <- read.csv("from_cellranger/severe123/vdj_b/filtered_contig_annotations.csv")
-hc1 <- read.csv("from_cellranger/hc1/vdj_b/filtered_contig_annotations.csv")
-hc2 <- read.csv("from_cellranger/hc2/vdj_b/filtered_contig_annotations.csv")
-hc3 <- read.csv("from_cellranger/hc3/vdj_b/filtered_contig_annotations.csv")
-hc4 <- read.csv("from_cellranger/hc4/vdj_b/filtered_contig_annotations.csv")
+hc1 <- read.csv("from_cellranger/healthy1/vdj_b/filtered_contig_annotations.csv")
+hc2 <- read.csv("from_cellranger/healthy2/vdj_b/filtered_contig_annotations.csv")
+hc3 <- read.csv("from_cellranger/healthy3/vdj_b/filtered_contig_annotations.csv")
 
 
 #Combinging the data frames:
@@ -43,7 +42,7 @@ contig.list <- list(critical119, critical120, critical213,
                     mild186, mild227, 
                     moderate124, moderate138, moderate272, moderate303,
                     severe122, severe123, 
-                    hc1, hc2, hc3, hc4)
+                    hc1, hc2, hc3)
 
 B.combined <- combineBCR(contig.list, 
                          samples = c("critical119", "critical120", "critical213",
@@ -51,13 +50,13 @@ B.combined <- combineBCR(contig.list,
                                      "mild186","mild227",
                                      "moderate124", "moderate138", "moderate272", "moderate303",
                                      "severe122", "severe123",
-                                     "healthy1", "healthy2", "healthy3", "healthy4"),
+                                     "healthy1", "healthy2", "healthy3"),
                          ID = c("Patient5", "Patient6", "Patient3",
                                 "Patient4", "Patient1", "Patient2",
                                 "Patient3", "Patient4", 
                                 "Patient6", "Patient5", "Patient1", "Patient2",
                                 "Patient6", "Patient5",
-                                "control1", "control2", "control3", "control4"))
+                                "control1", "control2", "control3"))
 
 B.combined <- addVariable(B.combined, name = "severity", 
                           variables = c("critical", "critical", "critical",
@@ -65,7 +64,7 @@ B.combined <- addVariable(B.combined, name = "severity",
                                         "mild", "mild",
                                         "moderate", "moderate", "moderate", "moderate",
                                         "severe", "severe",
-                                        "healthy", "healthy", "healthy", "healthy"))
+                                        "healthy", "healthy", "healthy"))
 head(B.combined)
 
 #Saving the contigs:
@@ -76,7 +75,7 @@ remove(critical119, critical120, critical213,
        mild186, mild227, 
        moderate124, moderate138, moderate272, moderate303,
        severe122, severe123,
-       hc1, hc2, hc3, hc4, contig.list)
+       hc1, hc2, hc3, contig.list)
 gc()
 
 ################################Preliminary BCR analysis########################
@@ -645,27 +644,27 @@ FindMarkers(object = BCR, ident.1 = "IGHV1-18.IGHJ3..IGHA1_IGLV1-47.IGLJ2.IGLC2"
 BCR$v.j <- paste(BCR$v_gene, BCR$j_gene, sep = ".")
 BCR$v.j[BCR$v.j == "NA.NA"] <- NA
 #V gene diversity, using the Shannon index:
-diversity <- data.frame()
+v.diversity <- data.frame()
 for (i in levels(BCR$sample)) {
   v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])))
-  diversity <- rbind(diversity, v.div)
-  rownames(diversity) <- diversity[,1]
-  colnames(diversity) <- c("sample", "Shannon.score", "outcome")
+  v.diversity <- rbind(v.diversity, v.div)
+  rownames(v.diversity) <- v.diversity[,1]
+  colnames(v.diversity) <- c("sample", "Shannon.score", "outcome")
 }
 
 #Comparing diversity between outcome groups:
 #Recovered vs. Healthy (p-value = 0.01212):
-wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Recovered"]), 
-            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]))
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Recovered"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Healthy"]))
 #Recovered vs. Deceased (p-value = 0.7546):
-wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Recovered"]), 
-            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Deceased"]))
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Recovered"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Deceased"]))
 #Deceased vs. Healthy (p-value = 0.02381):
-wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Deceased"]), 
-            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]))
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Deceased"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Healthy"]))
 #Healthy vs. not Healthy(p-value = 0.002941):
-wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]), 
-            y = as.numeric(diversity$Shannon.score[diversity$outcome != "Healthy"]))
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Healthy"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$outcome != "Healthy"]))
 #I think we can conclude that there is no difference between recovered and dead patients,
 #but that healthy controls have significantly higher diversity, in both Inverse Simpson,
 #and Shannon indexes.
@@ -673,8 +672,8 @@ wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy
 #insight (no significant differences).
 
 #Making the jitter graph:
-diversity$outcome <- factor(diversity$outcome, levels = c("Deceased", "Recovered", "Healthy"))
-plot <- ggplot(diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
+v.diversity$outcome <- factor(v.diversity$outcome, levels = c("Deceased", "Recovered", "Healthy"))
+plot <- ggplot(v.diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
   geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = sample)) +
   facet_wrap(~outcome) +
   ylab("Shannon Index Score") +  theme_classic() + 
@@ -697,45 +696,40 @@ heavy.chains <- BCR@meta.data[!is.na(BCR$v_gene),] %>%
   group_by(v_gene, j_gene) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() 
 
-cdr3 <- BCR@meta.data[!is.na(BCR$v_gene),] %>%
-  group_by(CTaa, sample) %>% dplyr::count() %>% arrange(desc(n)) %>%
-  as.data.frame()
-
-
-
 ################################Isotype analysis################################
 
-isotype <- BCR@meta.data[!is.na(BCR$c_gene),] %>%
+isotypes <- BCR@meta.data[!is.na(BCR$c_gene),] %>%
   group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() 
 
 #Isotype diversity, using the Shannon index:
-diversity <- data.frame()
+c.diversity <- data.frame()
 for (i in levels(BCR$sample)) {
-  c.div <- c(i, diversity(BCR[,BCR$sample == i]$c_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])))
-  diversity <- rbind(diversity, c.div)
-  rownames(diversity) <- diversity[,1]
-  colnames(diversity) <- c("sample", "Shannon.score", "outcome")
+  c.div <- c(i, diversity(BCR[,BCR$sample == i]$c_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])),
+             levels(factor(BCR$severity[BCR$sample == i])))
+  c.diversity <- rbind(c.diversity, c.div)
+  rownames(c.diversity) <- c.diversity[,1]
+  colnames(c.diversity) <- c("sample", "Shannon.score", "outcome", "severity")
 }
 #Comparing diversity between outcome groups:
 #Recovered vs. Healthy (p-value = 0.01212):
-wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Recovered"]), 
-            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]))
+wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Recovered"]), 
+            y = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Healthy"]))
 #Recovered vs. Deceased (p-value = 0.1419):
-wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Recovered"]), 
-            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Deceased"]))
+wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Recovered"]), 
+            y = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Deceased"]))
 #Deceased vs. Healthy (p-value = 0.04762):
-wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Deceased"]), 
-            y = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]))
+wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Deceased"]), 
+            y = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Healthy"]))
 #Healthy vs. not Healthy(p-value = 0.005882):
-wilcox.test(x = as.numeric(diversity$Shannon.score[diversity$outcome == "Healthy"]), 
-            y = as.numeric(diversity$Shannon.score[diversity$outcome != "Healthy"]))
+wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Healthy"]), 
+            y = as.numeric(c.diversity$Shannon.score[c.diversity$outcome != "Healthy"]))
 #I think we can conclude that there is no difference between recovered and dead patients,
 #but that healthy controls have significantly lower diversity in the Shannon index.
 
 #Making the jitter graph:
-diversity$outcome <- factor(diversity$outcome, levels = c("Deceased", "Recovered", "Healthy"))
-plot <- ggplot(diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
+c.diversity$outcome <- factor(c.diversity$outcome, levels = c("Deceased", "Recovered", "Healthy"))
+plot <- ggplot(c.diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
   geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = sample)) +
   facet_wrap(~outcome) +
   ylab("Shannon Index Score") +  theme_classic() + 
@@ -746,3 +740,44 @@ plot <- ggplot(diversity, aes(x = sample, y = as.numeric(Shannon.score))) +
 ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
        width = 15, height = 10, dpi = "retina", 
        plot = plot)
+
+################################Amino Acid Sequence Extranction#################
+
+#Here, I seek to extract CDR1, CDR2, and CDR3 AA sequences, for Oyama-san.
+#We would like to have the top clonotypes/AA sequences synthesized, 
+#so we can do specificity analysis (or something!).
+
+#First, we need the CTaa fields, which seem to correspond to the CDR3.
+#This I'll use to extract the other two CDR sequences, for each chain.
+
+sequences <- BCR@meta.data %>%
+  group_by(CTaa, sample) %>% dplyr::count() %>% arrange(desc(n), sample) %>%
+  as.data.frame()
+sequences <- mutate(sequences, cdr3 = CTaa, CTaa = NULL)
+sequences$hv3 <- vapply(str_split(sequences$cdr3, "[_]"), "[", "", 1)
+sequences$lt3 <- vapply(str_split(sequences$cdr3, "[_]"), "[", "", 2)
+sequences$folder <- vapply(str_split(sequences$sample, "[_]"), "[", "", 1)
+
+CDR123 <- data.frame()
+for (j in 1:nrow(sequences)) {
+    cdr <- read.table(paste0("from_cellranger/", sequences[j,]$folder, "/vdj_b/filtered_contig_annotations.csv"), sep = ",", header = T)
+     df <- data.frame(sample = sequences[j,]$sample,
+                
+      hv3 = sequences[j,]$hv3,
+      hv2 = cdr[cdr$cdr3 == sequences[j,]$hv3,]$cdr2[1],
+      hv1 = cdr[cdr$cdr3 == sequences[j,]$hv3,]$cdr1[1],
+      
+      lt3 = sequences[j,]$lt3,
+      lt2 = cdr[cdr$cdr3 == sequences[j,]$lt3,]$cdr2[1],
+      lt1 = cdr[cdr$cdr3 == sequences[j,]$lt3,]$cdr1[1]
+      
+    )
+     CDR123 <- rbind(CDR123, df)
+
+  }
+  
+#Join the two other CDR sequences with the abundance data frame:
+sequences <- left_join(sequences, CDR123)
+sequences <- sequences[,c("sample", "n", "cdr3", "hv3", "hv2", "hv1", "lt3", "lt2", "lt1", "folder")]
+write.table(sequences[,-10], "cdr-aa-sequences.tsv", sep = "\t", col.names = NA)
+
