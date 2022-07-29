@@ -27,7 +27,7 @@ Wilcoxon’s test, applied to diversity scores of V gene usage in the individual
 •	Doing the same comparison with V–J combinations, or J genes alone, yields less insight (no significant differences).
 
 
-I have also remade the BCR V–J heatmaps, removing the part with the complete.cases() function.
+I have also remade the BCR V–J heatmaps, removing the parts with the complete.cases() function.
 
 I have written some stuff in the manuscript skeleton:
 •	Added citations for other studies that found similar IGHV genes.
@@ -36,7 +36,20 @@ I have written some stuff in the manuscript skeleton:
 Tasks:
 •	Fisher’s exact test for V–J usage between the three groups (healthy, deceased, recovered), as well as the healthy group vs. the others.
 •	Fisher’s exact test for Ig isotypes between the three groups, and healthy vs. not-so.
-•	Continue writing: include more about IGHV1-18; include diversity information; maybe Fisher’s test results too.
+Continue writing: include more about IGHV1-18; include diversity information; maybe Fisher’s test results too. 
+Exp. 003			                                   		                	  2022.07.29
 
+I have written some stuff in the manuscript skeleton:
+•	Added a reference for an interesting study about IGHV4-34.
+•	Added information about IGHV1-18 as a biomarker in melanoma.
+•	Added some information about the isotypes in the data.
 
+Performed isotype diversity analysis, with the results showing an opposite trend to that observed with v gene usage; added this to the PowePoint file containing V gene usage diversity results.
+
+Extracted the CDR1, 2, and 3 amino acid sequences for the clonotypes, in order of abundance, so that we can synthesize antibodies!
+
+Tasks:
+•	Continue writing about isotypes in the manuscript; include information about preferential usage, with p values and all!
+•	Consult again with Tabe Sensei about heatmaps vs. bar graphs.
+•	Read more papers about BCR analysis; maybe one from the pile under my diary.
 
