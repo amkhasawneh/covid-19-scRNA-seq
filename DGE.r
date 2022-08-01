@@ -175,6 +175,7 @@ ggsave(filename = "graphs/enrichment-pt1-seurat-crit.jpeg", dpi = "print",
 
 
 rm(list=setdiff(ls(), c("BCR", "hiclo")))
+
 #For Patient 2:
 pt2 <- BCR[,BCR$patient == "Patient 2" & BCR$v_gene == "IGHV4-34"]
 pt2$sample <- droplevels(pt2$sample)
@@ -492,6 +493,7 @@ ggsave(filename = "graphs/enrichment-pt4-seurat-mod.jpeg", dpi = "print",
                          title = "Upregulated in Patient 4 moderate (IGHV3-23)"))
 
 rm(list=setdiff(ls(), c("BCR", "hiclo")))
+
 #For Patient 5:
 pt5 <- BCR[,BCR$patient == "Patient 5" & BCR$v_gene == "IGHV3-23"]
 pt5$sample <- droplevels(pt5$sample)
@@ -616,6 +618,7 @@ ggsave(filename = "graphs/enrichment-pt5-seurat-mod.jpeg", dpi = "print",
 
 
 rm(list=setdiff(ls(), c("BCR", "hiclo")))
+
 #For Patient 6:
 pt6 <- BCR[,BCR$patient == "Patient 6" & BCR$v_gene == "IGHV3-23"]
 pt6$sample <- droplevels(pt6$sample)
@@ -1181,7 +1184,7 @@ ggsave(filename = "graphs/enrichment-pt1-wlx-crit.jpeg", dpi = "print",
            title = "Upregulated in Patient 1 critical"))
 
 #For Patient 2:
-pt2 <- BCR[,BCR$patient == "Patient 2"]
+pt2 <- BCR[,BCR$patient == "Patient 2" & BCR$v_gene == "IGHV4-34"]
 pt2$sample <- droplevels(pt2$sample)
 DefaultAssay(pt2) <- "RNA"
 
@@ -1289,8 +1292,9 @@ ggsave(filename = "graphs/enrichment-pt2-wlx-mod.jpeg", dpi = "print",
 
 
 rm(list=setdiff(ls(), "BCR"))
+
 #For Patient 3:
-pt3 <- BCR[,BCR$patient == "Patient 3"]
+pt3 <- BCR[,BCR$patient == "Patient 3" & BCR$v_gene == "IGHV3-48"]
 pt3$sample <- droplevels(pt3$sample)
 DefaultAssay(pt3) <- "RNA"
 
@@ -1398,8 +1402,9 @@ ggsave(filename = "graphs/enrichment-pt3-wlx-mod.jpeg", dpi = "print",
 
 
 rm(list=setdiff(ls(), "BCR"))
+
 #For Patient 4:
-pt4 <- BCR[,BCR$patient == "Patient 4"]
+pt4 <- BCR[,BCR$patient == "Patient 4" & BCR$v_gene == "IGHV3-33"]
 pt4$sample <- droplevels(pt4$sample)
 DefaultAssay(pt4) <- "RNA"
 
@@ -1505,15 +1510,18 @@ ggsave(filename = "graphs/enrichment-pt4-wlx-mod.jpeg", dpi = "print",
            ylab = NULL,
            title = "Upregulated in Patient 4 moderate"))
 
+rm(list=setdiff(ls(), "BCR"))
+
 #For Patient 5:
-pt5 <- BCR[,BCR$patient == "Patient 5"]
+pt5 <- BCR[,BCR$patient == "Patient 5" & BCR$v_gene == "IGHV3-30"]
 pt5$sample <- droplevels(pt5$sample)
 DefaultAssay(pt5) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
+#, "moderate138_Patient5"
 
 wlx.mrk.pt5 <- wilcoxauc(pt5, 'sample',
-                         c("critical119_Patient5", "severe123_Patient5", "moderate138_Patient5"),
+                         c("critical119_Patient5", "severe123_Patient5"),
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
