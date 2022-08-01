@@ -646,10 +646,11 @@ BCR$v.j[BCR$v.j == "NA.NA"] <- NA
 #V gene diversity, using the Shannon index:
 v.diversity <- data.frame()
 for (i in levels(BCR$sample)) {
-  v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])))
+  v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table), 
+             levels(factor(BCR$outcome[BCR$sample == i])), levels(factor(BCR$severity[BCR$sample == i])))
   v.diversity <- rbind(v.diversity, v.div)
   rownames(v.diversity) <- v.diversity[,1]
-  colnames(v.diversity) <- c("sample", "Shannon.score", "outcome")
+  colnames(v.diversity) <- c("sample", "Shannon.score", "outcome", "severity")
 }
 
 #Comparing diversity between outcome groups:
@@ -673,8 +674,9 @@ wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Hea
 
 #Making the jitter graph:
 v.diversity$outcome <- factor(v.diversity$outcome, levels = c("Deceased", "Recovered", "Healthy"))
-plot <- ggplot(v.diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
+plot <- ggplot(v.diversity, aes(x = sample, y = as.numeric(Shannon.score), label = sample)) + 
   geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = sample)) +
+  geom_text(position = position_jitter(seed = 1), angle = 90) +
   facet_wrap(~outcome) +
   ylab("Shannon Index Score") +  theme_classic() + 
   theme(axis.title.x = element_blank(), 
@@ -682,6 +684,60 @@ plot <- ggplot(v.diversity, aes(x = sample, y = as.numeric(Shannon.score))) +
         legend.text = element_text(size = 20),
         strip.text = element_text(size = 15))
 ggsave(filename = "clonotype-diversity-jitter.jpeg", path = "./graphs/",
+       width = 15, height = 10, dpi = "retina", 
+       plot = plot)
+
+#Comparing diversity between severity groups:
+#Critical vs. Moderate (p-value = 0.1714):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "critical"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "moderate"]))
+#Critical vs. Mild (p-value = 0.4286):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "critical"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "mild"]))
+#Critical vs. Severe (p-value = 0.4286):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "critical"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "severe"]))
+#Moderate vs. Severe(p-value = 0.8):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "moderate"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "severe"]))
+#Mild vs. Severe(p-value = 1):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "mild"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "severe"]))
+#Mild vs. Moderate (p-value = 1):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "mild"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "moderate"]))
+
+#Mild vs. Healthy (p-value = 0.2):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "mild"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "healthy"]))
+#Moderate vs. Healthy (p-value = 0.5714):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "moderate"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "healthy"]))
+#Severe vs. Healthy (p-value = 0.2):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "severe"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "healthy"]))
+#Critical vs. Healthy (p-value = 0.02381):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "critical" & v.diversity$sample != "critical308_Patient2"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "healthy"]))
+
+
+#I think we can conclude that there is no difference between severity groups,
+#but that healthy controls and critical patients have a difference.
+#Of course, this makes no sense. Even if I exclude the critical308_Patient2 sample,
+#there still remains a "significant" difference...
+
+#Making the jitter graph:
+v.diversity$severity <- factor(v.diversity$severity, levels = c("healthy", "mild", "moderate", "severe", "critical"))
+plot <- ggplot(v.diversity, aes(x = sample, y = as.numeric(Shannon.score), label = sample)) + 
+  geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = sample)) +
+  geom_text(position = position_jitter(seed = 1), angle = 90) +
+  facet_wrap(~severity) +
+  ylab("Shannon Index Score") +  theme_classic() + 
+  theme(axis.title.x = element_blank(), 
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        legend.text = element_text(size = 20),
+        strip.text = element_text(size = 15)) + NoLegend()
+ggsave(filename = "clonotype-diversity-by-severity-jitter.jpeg", path = "./graphs/",
        width = 15, height = 10, dpi = "retina", 
        plot = plot)
 
@@ -741,7 +797,7 @@ ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
        width = 15, height = 10, dpi = "retina", 
        plot = plot)
 
-################################Amino Acid Sequence Extranction#################
+################################Amino Acid Sequence Extraction##################
 
 #Here, I seek to extract CDR1, CDR2, and CDR3 AA sequences, for Oyama-san.
 #We would like to have the top clonotypes/AA sequences synthesized, 
@@ -751,7 +807,7 @@ ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
 #This I'll use to extract the other two CDR sequences, for each chain.
 
 sequences <- BCR@meta.data %>%
-  group_by(CTaa, sample) %>% dplyr::count() %>% arrange(desc(n), sample) %>%
+  group_by(CTaa, sample, cell) %>% dplyr::count() %>% arrange(desc(n), sample) %>%
   as.data.frame()
 sequences <- mutate(sequences, cdr3 = CTaa, CTaa = NULL)
 sequences$hv3 <- vapply(str_split(sequences$cdr3, "[_]"), "[", "", 1)
@@ -759,25 +815,33 @@ sequences$lt3 <- vapply(str_split(sequences$cdr3, "[_]"), "[", "", 2)
 sequences$folder <- vapply(str_split(sequences$sample, "[_]"), "[", "", 1)
 
 CDR123 <- data.frame()
-for (j in 1:nrow(sequences)) {
-    cdr <- read.table(paste0("from_cellranger/", sequences[j,]$folder, "/vdj_b/filtered_contig_annotations.csv"), sep = ",", header = T)
-     df <- data.frame(sample = sequences[j,]$sample,
-                
-      hv3 = sequences[j,]$hv3,
-      hv2 = cdr[cdr$cdr3 == sequences[j,]$hv3,]$cdr2[1],
-      hv1 = cdr[cdr$cdr3 == sequences[j,]$hv3,]$cdr1[1],
+for (i in levels(factor(sequences$folder))) {
+  
+    cdr <- read.table(paste0("from_cellranger/", i, "/vdj_b/filtered_contig_annotations.csv"), sep = ",", header = T)
+  
+    for (j in 1:nrow(sequences[sequences$folder == i,])) {
+      df <- data.frame(cell = as.character(sequences[sequences$folder == i,][j,]$sample),
+                      
+      hv3 = sequences[sequences$folder == i,][j,]$hv3,
+      hv2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2),
+      hv1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr1),
       
-      lt3 = sequences[j,]$lt3,
-      lt2 = cdr[cdr$cdr3 == sequences[j,]$lt3,]$cdr2[1],
-      lt1 = cdr[cdr$cdr3 == sequences[j,]$lt3,]$cdr1[1]
+      lt3 = sequences[sequences$folder == i,][j,]$lt3,
+      lt2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2),
+      lt1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1)
       
     )
      CDR123 <- rbind(CDR123, df)
+    }
+       
 
   }
   
 #Join the two other CDR sequences with the abundance data frame:
-sequences <- left_join(sequences, CDR123)
+sequences <- left_join(CDR123, sequences)
 sequences <- sequences[,c("sample", "n", "cdr3", "hv3", "hv2", "hv1", "lt3", "lt2", "lt1", "folder")]
+sequences <- CDR123 %>%
+  group_by(hv3, hv1, hv2) %>% 
+  count() %>% arrange(desc(n))
 write.table(sequences[,-10], "cdr-aa-sequences.tsv", sep = "\t", col.names = NA)
 
