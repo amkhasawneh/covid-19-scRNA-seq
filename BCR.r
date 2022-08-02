@@ -291,9 +291,8 @@ ggplot(data = heavy.chains[heavy.chains$patient == i,], aes(x = severity, fill =
   geom_text(aes(label = n, y = n), color="green", position = position_stack(vjust = 0.5)) 
 
 #Re-ordering abundance from highest to lowest:
-abundance <- abundanceContig(BCR, cloneCall = "gene", split.by = "sample", 
-                             exportTable = T, scale = F) %>% arrange(desc(Abundance)) %>%
-  head(40)
+abundance <- abundanceContig(BCR, cloneCall = "gene",  
+                             exportTable = T, scale = F) %>% arrange(desc(Abundance))
 
 abundanceContig(BCR, cloneCall = "gene", split.by = "sample",
                 exportTable = F, scale = F)
@@ -303,7 +302,7 @@ write.table(BCR@meta.data, "seurat-clonotypes.tsv", sep = "\t", quote = F, row.n
 
 saveRDS(BCR, "05-BCR-combined")
 
-BCR@meta.data[complete.cases(BCR@meta.data),] %>%
+clo <- BCR@meta.data[complete.cases(BCR@meta.data),] %>%
   group_by(v_gene, j_gene) %>% dplyr::count(sort = T)
 
 #V-J gene usage heatmaps:
@@ -312,14 +311,42 @@ BCR@meta.data %>%
   group_by(v_gene, j_gene) %>% dplyr::count() %>% na.omit() %>%
   mutate(v_gene = vapply(strsplit(v_gene, "[V]"), "[", "", 2),
          j_gene = vapply(strsplit(j_gene, "[J]"), "[", "", 2)) %>%
+  spread(key = j_gene, value = n) %>% as.data.frame() -> matrix
+rownames(matrix) <-  matrix$v_gene
+matrix$v_gene <- NULL
+matrix <- as.matrix(matrix)
+matrix[is.na(matrix)] <- 0
+ggsave(filename = paste0("v-j-heatmap-all.jpeg"), path = "./graphs",
+       height = 22 , width = 5, dpi = "print",
+       plot = pheatmap(matrix, cluster_cols = F, cluster_rows = F, angle_col = 0,
+                       cellwidth = 30, cellheight = 30, name = "Frequency", fontsize = 20))
+#For all healthy:
+BCR[,BCR$severity == "healthy"]@meta.data %>%
+  group_by(v_gene, j_gene) %>% dplyr::count() %>% na.omit() %>%
+  mutate(v_gene = vapply(strsplit(v_gene, "[V]"), "[", "", 2),
+         j_gene = vapply(strsplit(j_gene, "[J]"), "[", "", 2)) %>%
   spread(key = v_gene, value = n) %>% as.data.frame() -> matrix
 rownames(matrix) <-  matrix$j_gene
 matrix$j_gene <- NULL
 matrix <- as.matrix(matrix)
 matrix[is.na(matrix)] <- 0
-ggsave(filename = paste0("v-j-heatmap-all.jpeg"), path = "./graphs",
-       height = 6 , width = 26,
-       plot = pheatmap(matrix, cluster_cols = F, cluster_rows = F,
+ggsave(filename = paste0("v-j-heatmap-healthy-horizontal.jpeg"), path = "./graphs",
+       height = 4 , width = 21, dpi = "print",
+       plot = pheatmap(matrix, cluster_cols = F, cluster_rows = F, angle_col = 270,
+                       cellwidth = 30, cellheight = 30, name = "Frequency", fontsize = 20))
+#For all Covid:
+BCR[,BCR$severity != "healthy"]@meta.data %>%
+  group_by(v_gene, j_gene) %>% dplyr::count() %>% na.omit() %>%
+  mutate(v_gene = vapply(strsplit(v_gene, "[V]"), "[", "", 2),
+         j_gene = vapply(strsplit(j_gene, "[J]"), "[", "", 2)) %>%
+  spread(key = j_gene, value = n) %>% as.data.frame() -> matrix
+rownames(matrix) <-  matrix$v_gene
+matrix$v_gene <- NULL
+matrix <- as.matrix(matrix)
+matrix[is.na(matrix)] <- 0
+ggsave(filename = paste0("v-j-heatmap-covid.jpeg"), path = "./graphs",
+       height = 22 , width = 5, dpi = "print",
+       plot = pheatmap(matrix, cluster_cols = F, cluster_rows = F, angle_col = 0,
                        cellwidth = 30, cellheight = 30, name = "Frequency", fontsize = 20))
 
 #For each severity group:
@@ -641,12 +668,10 @@ FindMarkers(object = BCR, ident.1 = "IGHV1-18.IGHJ3..IGHA1_IGLV1-47.IGLJ2.IGLC2"
 
 ################################Diversity Testing###############################
 
-BCR$v.j <- paste(BCR$v_gene, BCR$j_gene, sep = ".")
-BCR$v.j[BCR$v.j == "NA.NA"] <- NA
 #V gene diversity, using the Shannon index:
 v.diversity <- data.frame()
 for (i in levels(BCR$sample)) {
-  v.div <- c(i, diversity(BCR[,BCR$sample == i]$v_gene %>% table), 
+  v.div <- c(i, diversity(table(BCR[,BCR$sample == i]$v_gene)), 
              levels(factor(BCR$outcome[BCR$sample == i])), levels(factor(BCR$severity[BCR$sample == i])))
   v.diversity <- rbind(v.diversity, v.div)
   rownames(v.diversity) <- v.diversity[,1]
@@ -663,9 +688,10 @@ wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Rec
 #Deceased vs. Healthy (p-value = 0.02381):
 wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Deceased"]), 
             y = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Healthy"]))
-#Healthy vs. not Healthy(p-value = 0.002941):
+#Healthy vs. COVID-19 (p-value = 0.002941):
 wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$outcome == "Healthy"]), 
             y = as.numeric(v.diversity$Shannon.score[v.diversity$outcome != "Healthy"]))
+
 #I think we can conclude that there is no difference between recovered and dead patients,
 #but that healthy controls have significantly higher diversity, in both Inverse Simpson,
 #and Shannon indexes.
@@ -717,7 +743,7 @@ wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "mo
 wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "severe"]), 
             y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "healthy"]))
 #Critical vs. Healthy (p-value = 0.02381):
-wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "critical" & v.diversity$sample != "critical308_Patient2"]), 
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "critical"]), 
             y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "healthy"]))
 
 
@@ -741,22 +767,35 @@ ggsave(filename = "clonotype-diversity-by-severity-jitter.jpeg", path = "./graph
        width = 15, height = 10, dpi = "retina", 
        plot = plot)
 
+
 #Analyzing clonotypes not unlike the paper by Jin et al (doi: 10.1093/bib/bbab192):
 clonotypes <- BCR@meta.data %>%
-  group_by(CTgene, sample) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  group_by(CTgene, sample, severity) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() %>% na.omit()
-clonotypes[clonotypes$n > 2,] %>% nrow()
+clonal <- clonotypes[clonotypes$n > 2,] 
 clonotypes %>% nrow()
 
+nrow(clonal[clonal$severity == "healthy",])/nrow(clonotypes[clonotypes$severity == "healthy",])
+
 heavy.chains <- BCR@meta.data[!is.na(BCR$v_gene),] %>%
-  group_by(v_gene, j_gene) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  group_by(v_gene, j_gene, severity) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() 
+
+clonal.chains <- heavy.chains[heavy.chains$n > 2,]
+nrow(clonal.chains[clonal.chains$severity == "healthy",])/nrow(heavy.chains[heavy.chains$severity == "healthy",])
+nrow(clonal.chains[clonal.chains$severity != "healthy",])/nrow(heavy.chains[heavy.chains$severity != "healthy",])
+
 
 ################################Isotype analysis################################
 
-isotypes <- BCR@meta.data[!is.na(BCR$c_gene),] %>%
+isotypes.covid <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity != "healthy",] %>%
   group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() 
+
+isotypes.healthy <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity == "healthy",] %>%
+  group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  as.data.frame() 
+
 
 #Isotype diversity, using the Shannon index:
 c.diversity <- data.frame()
@@ -780,6 +819,8 @@ wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Dec
 #Healthy vs. not Healthy(p-value = 0.005882):
 wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Healthy"]), 
             y = as.numeric(c.diversity$Shannon.score[c.diversity$outcome != "Healthy"]))
+
+
 #I think we can conclude that there is no difference between recovered and dead patients,
 #but that healthy controls have significantly lower diversity in the Shannon index.
 
