@@ -64,7 +64,7 @@ for (i in levels(factor(BCR@meta.data$sample))) {
 
 
 BCR@meta.data %>% group_by(v_gene, j_gene) %>% na.omit() %>% count() %>% 
-  arrange(desc(n)) %>% head(40) 
+  arrange(desc(n)) %>% as.data.frame() %>% head(40) 
 
 
 BCR <- readRDS("05-BCR-combined.rds")
@@ -1076,6 +1076,8 @@ ggsave(filename = "graphs/enrichment-v-1-18-pt1-wlx-crit.jpeg", dpi = "print",
 
 BCR <- readRDS("05-BCR-combined.rds")
 
+rm(list=setdiff(ls(), "BCR"))
+
 #For Patient 1:
 pt1 <- BCR[,BCR$patient == "Patient 1" & BCR$v_gene == "IGHV1-18"]
 pt1$sample <- droplevels(pt1$sample)
@@ -1116,7 +1118,8 @@ write.table(ranked.genes,
 topUpmod <- ranked.genes %>% 
   dplyr::filter(group == "moderate272_Patient1") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj)
+  top_n(50, wt=-padj) %>%
+  head(10)
 
 topDownmod <- ranked.genes %>%
   dplyr::filter(group == "moderate272_Patient1") %>%
@@ -1126,7 +1129,8 @@ topDownmod <- ranked.genes %>%
 topUpcrit <- ranked.genes %>% 
   dplyr::filter(group == "critical293_Patient1") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj)
+  top_n(50, wt=-padj) %>%
+  head(10)
 
 topDowncrit <- ranked.genes %>% 
   dplyr::filter(group == "critical293_Patient1") %>%
@@ -1135,6 +1139,9 @@ topDowncrit <- ranked.genes %>%
 
 
 topPathways <- bind_rows(topUpmod, topDownmod, topUpcrit, topDowncrit) #%>% arrange(-rank)
+
+cat(topUpmod$feature, sep = ", ")
+cat(topUpcrit$feature, sep = ", ")
 
 # save found markers as exportable table
 write.table(topPathways,
@@ -1166,6 +1173,10 @@ enrich.topUpcrit1 <- enrichr(genes = topUpcrit$feature,
 enrich.topUpmod1 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
 
+cat(vapply(str_split(enrich.topUpmod1[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+cat(vapply(str_split(enrich.topUpcrit1[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+
+
 
 ggsave(filename = "graphs/enrichment-pt1-wlx-mod.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
@@ -1183,8 +1194,9 @@ ggsave(filename = "graphs/enrichment-pt1-wlx-crit.jpeg", dpi = "print",
            ylab = NULL,
            title = "Upregulated in Patient 1 critical"))
 
+
 #For Patient 2:
-pt2 <- BCR[,BCR$patient == "Patient 2" & BCR$v_gene == "IGHV4-34"]
+pt2 <- BCR[,BCR$patient == "Patient 2" & BCR$v_gene == "IGHV4-59"]
 pt2$sample <- droplevels(pt2$sample)
 DefaultAssay(pt2) <- "RNA"
 
@@ -1223,7 +1235,8 @@ write.table(ranked.genes,
 topUpmod <- ranked.genes %>% 
   dplyr::filter(group == "moderate303_Patient2") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj)
+  top_n(50, wt=-padj) %>%
+  head(10)
 
 topDownmod <- ranked.genes %>%
   dplyr::filter(group == "moderate303_Patient2") %>%
@@ -1233,13 +1246,16 @@ topDownmod <- ranked.genes %>%
 topUpcrit <- ranked.genes %>% 
   dplyr::filter(group == "critical308_Patient2") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj)
+  top_n(50, wt=-padj) %>%
+  head(10)
 
 topDowncrit <- ranked.genes %>% 
   dplyr::filter(group == "critical308_Patient2") %>%
   filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
+cat(topUpmod$feature, sep = ", ")
+cat(topUpcrit$feature, sep = ", ")
 
 topPathways <- bind_rows(topUpmod, topDownmod, topUpcrit, topDowncrit) #%>% arrange(-rank)
 
@@ -1273,6 +1289,9 @@ enrich.topUpcrit2 <- enrichr(genes = topUpcrit$feature,
 enrich.topUpmod2 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
 
+cat(vapply(str_split(enrich.topUpmod2[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+cat(vapply(str_split(enrich.topUpcrit2[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+
 
 ggsave(filename = "graphs/enrichment-pt2-wlx-crit.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
@@ -1294,7 +1313,7 @@ ggsave(filename = "graphs/enrichment-pt2-wlx-mod.jpeg", dpi = "print",
 rm(list=setdiff(ls(), "BCR"))
 
 #For Patient 3:
-pt3 <- BCR[,BCR$patient == "Patient 3" & BCR$v_gene == "IGHV3-48"]
+pt3 <- BCR[,BCR$patient == "Patient 3" & BCR$v_gene == "IGHV4-39"]
 pt3$sample <- droplevels(pt3$sample)
 DefaultAssay(pt3) <- "RNA"
 
@@ -1333,7 +1352,9 @@ write.table(ranked.genes,
 topUpmod <- ranked.genes %>% 
   dplyr::filter(group == "mild186_Patient3") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj)
+  top_n(50, wt=-padj) %>%
+  head(10) %>%
+  head(10)
 
 topDownmod <- ranked.genes %>%
   dplyr::filter(group == "mild186_Patient3") %>%
@@ -1343,13 +1364,17 @@ topDownmod <- ranked.genes %>%
 topUpcrit <- ranked.genes %>% 
   dplyr::filter(group == "critical213_Patient3") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj)
+  top_n(50, wt=-padj) %>%
+  head(10) %>% 
+  head(10)
 
 topDowncrit <- ranked.genes %>% 
   dplyr::filter(group == "critical213_Patient3") %>%
   filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
+cat(topUpmod$feature, sep = ", ")
+cat(topUpcrit$feature, sep = ", ")
 
 topPathways <- bind_rows(topUpmod, topDownmod, topUpcrit, topDowncrit) #%>% arrange(-rank)
 
@@ -1383,6 +1408,7 @@ enrich.topUpcrit3 <- enrichr(genes = topUpcrit$feature,
 enrich.topUpmod3 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
 
+cat(vapply(str_split(enrich.topUpmod3[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
 
 ggsave(filename = "graphs/enrichment-pt3-wlx-crit.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
@@ -1404,7 +1430,7 @@ ggsave(filename = "graphs/enrichment-pt3-wlx-mod.jpeg", dpi = "print",
 rm(list=setdiff(ls(), "BCR"))
 
 #For Patient 4:
-pt4 <- BCR[,BCR$patient == "Patient 4" & BCR$v_gene == "IGHV3-33"]
+pt4 <- BCR[,BCR$patient == "Patient 4" & BCR$v_gene == "IGHV3-23"]
 pt4$sample <- droplevels(pt4$sample)
 DefaultAssay(pt4) <- "RNA"
 
@@ -1443,7 +1469,8 @@ write.table(ranked.genes,
 topUpmod <- ranked.genes %>% 
   dplyr::filter(group == "mild227_Patient4") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj)
+  top_n(50, wt=-padj) %>%
+  head(10)
 
 topDownmod <- ranked.genes %>%
   dplyr::filter(group == "mild227_Patient4") %>%
@@ -1453,13 +1480,15 @@ topDownmod <- ranked.genes %>%
 topUpcrit <- ranked.genes %>% 
   dplyr::filter(group == "critical238_Patient4") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj)
+  top_n(50, wt=-padj) %>%
+  head(10)
 
 topDowncrit <- ranked.genes %>% 
   dplyr::filter(group == "critical238_Patient4") %>%
   filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
+cat(topUpmod$feature, sep = ", ")
 
 topPathways <- bind_rows(topUpmod, topDownmod, topUpcrit, topDowncrit) #%>% arrange(-rank)
 
@@ -1492,6 +1521,8 @@ enrich.topUpcrit4 <- enrichr(genes = topUpcrit$feature,
                                databases = "GO_Biological_Process_2021")
 enrich.topUpmod4 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
+
+cat(vapply(str_split(enrich.topUpmod4[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
 
 
 ggsave(filename = "graphs/enrichment-pt4-wlx-crit.jpeg", dpi = "print",
@@ -1640,15 +1671,17 @@ ggsave(filename = "graphs/enrichment-pt5-wlx-mod.jpeg", dpi = "print",
            ylab = NULL,
            title = "Upregulated in Patient 5 moderate"))
 
+rm(list=setdiff(ls(), "BCR"))
+
 #For Patient 6:
-pt6 <- BCR[,BCR$patient == "Patient 6"]
+pt6 <- BCR[,BCR$patient == "Patient 6" & BCR$v_gene == "IGHV3-23"]
 pt6$sample <- droplevels(pt6$sample)
 DefaultAssay(pt6) <- "RNA"
 
-# perform a fast Wilcoxon rank sum test with presto
+# perform a fast Wilcoxon rank sum test with presto:  , "moderate124_Patient6"
 
 wlx.mrk.pt6 <- wilcoxauc(pt6, 'sample',
-                         c("critical120_Patient6", "severe122_Patient6", "moderate124_Patient6"),
+                         c("critical120_Patient6", "severe122_Patient6"),
                          seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1721,6 +1754,7 @@ write.table(topPathways,
 
 top <- topPathways %>% group_by(group) 
 
+cat(topUpsev$feature, sep = ", ")
 # create a scale.data slot for the selected genes in subset data
 alldata <- ScaleData(object = pt6, 
                      features = as.character(unique(top$feature), assay = "RNA"))
