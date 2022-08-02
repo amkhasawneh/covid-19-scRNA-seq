@@ -820,8 +820,9 @@ for (i in levels(factor(sequences$folder))) {
     cdr <- read.table(paste0("from_cellranger/", i, "/vdj_b/filtered_contig_annotations.csv"), sep = ",", header = T)
   
     for (j in 1:nrow(sequences[sequences$folder == i,])) {
-      df <- data.frame(cell = as.character(sequences[sequences$folder == i,][j,]$sample),
-                      
+      df <- data.frame(cell = sequences[sequences$folder == i,][j,]$cell,
+                      sample = as.character(sequences[sequences$folder == i,][j,]$sample),
+                      cdr3 = sequences[sequences$folder == i,][j,]$cdr3,
       hv3 = sequences[sequences$folder == i,][j,]$hv3,
       hv2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2),
       hv1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr1),
@@ -837,11 +838,9 @@ for (i in levels(factor(sequences$folder))) {
 
   }
   
-#Join the two other CDR sequences with the abundance data frame:
-sequences <- left_join(CDR123, sequences)
-sequences <- sequences[,c("sample", "n", "cdr3", "hv3", "hv2", "hv1", "lt3", "lt2", "lt1", "folder")]
-sequences <- CDR123 %>%
-  group_by(hv3, hv1, hv2) %>% 
+#Save table:
+CDRabundance <- CDR123 %>%
+  group_by(cdr3, hv3, hv2, hv1, lt3, lt2, lt1, sample) %>% 
   count() %>% arrange(desc(n))
-write.table(sequences[,-10], "cdr-aa-sequences.tsv", sep = "\t", col.names = NA)
+write.table(CDRabundance, "cdr-aa-sequences-by-sample.tsv", sep = "\t", col.names = NA)
 
