@@ -13,7 +13,6 @@ library(pheatmap)
 library(grid)
 library(gridExtra)
 library(cowplot)
-library(SCpubr)
 library(vegan)
 
 #Loading the data:
@@ -788,13 +787,25 @@ nrow(clonal.chains[clonal.chains$severity != "healthy",])/nrow(heavy.chains[heav
 
 ################################Isotype analysis################################
 
-isotypes.covid <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity != "healthy",] %>%
-  group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
-  as.data.frame() 
+rm(list=setdiff(ls(), "BCR"))
+
+isotypes <- BCR@meta.data[!is.na(BCR$c_gene),] %>%
+  group_by(c_gene, sample, outcome) %>% count() %>%
+  arrange(desc(n)) %>% as.data.frame()
+isotypes <-  isotypes %>% spread(key = c_gene, value = n)
+isotypes[is.na(isotypes)] <- 0
+rownames(isotypes) <- isotypes$sample
+isotypes$sample <- NULL
+isotypes[,-c(1)] <- (isotypes[,-c(1)] / rowSums(isotypes[,-c(1)])) * 100
 
 isotypes.healthy <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity == "healthy",] %>%
   group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() 
+
+isotypes.covid <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity != "healthy",] %>%
+  group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  as.data.frame() 
+
 
 
 #Isotype diversity, using the Shannon index:
