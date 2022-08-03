@@ -52,4 +52,32 @@ Tasks:
 •	Continue writing about isotypes in the manuscript; include information about preferential usage, with p values and all!
 •	Consult again with Tabe Sensei about heatmaps vs. bar graphs.
 •	Read more papers about BCR analysis; maybe one from the pile under my diary.
+ 
+ 
+Exp. 004			                                   		                	  2022.08.01
 
+9 o’clock meeting tasks:
+•	Compare clonotype sequences. And check for similarities with Cao et al.
+•	Does FindAllMarkers do ANOVA?
+•	Make a table for up and down regulated genes and pathways for each patient between samples. 
+•	Compare diversity between severity stages of each patient. Match them with lines on the graph. Separate it by severity, and remember sequence.
+•	Write more in the manuscript.
+The “done ones”:
+•	Make a table for up and down regulated genes and pathways for each patient between samples. 
+•	Does FindAllMarkers do ANOVA? No! It is not what we want, so for the table above I had to subset into two samples only at a time for patients 5 and 6.
+
+ 
+Exp. 005			                                   		                	  2022.08.02
+
+Things I done did today:
+•	Improved the code to extract the cdr 1 and 2 (and 3) for heavy (and light) chains. Hopefully, the new code is more accurate, as it takes into account the cell barcode too. Now I need to count the most abundant AA sequences.
+•	Wrote some! Added a “statistical analysis” part in the methods section, and added a paragraph about V gene diversity in the results.
+•	Adjusted the DEGs and pathways to 10 and 20, respectively.
+
+ 
+Exp. 006			                                   		                	  2022.08.03
+
+What I did today?
+•	Finished redoing the up/down gene/pathway table, and uploaded it to Box.
+•	Added paragraph about isotype diversity in manuscript.
+•	Added code for isotype contingency table.
