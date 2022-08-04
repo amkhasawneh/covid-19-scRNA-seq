@@ -789,6 +789,7 @@ nrow(clonal.chains[clonal.chains$severity != "healthy",])/nrow(heavy.chains[heav
 
 rm(list=setdiff(ls(), "BCR"))
 
+#Creating an isotype "contingency table":
 isotypes <- BCR@meta.data[!is.na(BCR$c_gene),] %>%
   group_by(c_gene, sample, outcome) %>% count() %>%
   arrange(desc(n)) %>% as.data.frame()
@@ -797,6 +798,21 @@ isotypes[is.na(isotypes)] <- 0
 rownames(isotypes) <- isotypes$sample
 isotypes$sample <- NULL
 isotypes[,-c(1)] <- (isotypes[,-c(1)] / rowSums(isotypes[,-c(1)])) * 100
+
+#Comparing the different outcome groups' usage of IGHM:
+#Recovered vs. Healthy (p-value = 0.02424):
+wilcox.test(x = as.numeric(isotypes$IGHM[isotypes$outcome == "Recovered"]), 
+            y = as.numeric(isotypes$IGHM[isotypes$outcome == "Healthy"]))
+#Recovered vs. Deceased (p-value = 0.002664):
+wilcox.test(x = as.numeric(isotypes$IGHM[isotypes$outcome == "Recovered"]), 
+            y = as.numeric(isotypes$IGHM[isotypes$outcome == "Deceased"]))
+#Deceased vs. Healthy (p-value = 0.02381):
+wilcox.test(x = as.numeric(isotypes$IGHM[isotypes$outcome == "Deceased"]), 
+            y = as.numeric(isotypes$IGHM[isotypes$outcome == "Healthy"]))
+#Healthy vs. not Healthy(p-value = 0.005882):
+wilcox.test(x = as.numeric(isotypes$IGHM[isotypes$outcome == "Healthy"]), 
+            y = as.numeric(isotypes$IGHM[isotypes$outcome != "Healthy"]))
+
 
 isotypes.healthy <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity == "healthy",] %>%
   group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
