@@ -81,3 +81,10 @@ What I did today?
 •	Finished redoing the up/down gene/pathway table, and uploaded it to Box.
 •	Added paragraph about isotype diversity in manuscript.
 •	Added code for isotype contingency table.
+ 
+Exp. 007			                                   		                	  2022.08.04
+
+What I did today:
+•	Changed V–J gene usage bar graphs to “stacked”, and changed the colors to a more contrasting combination, and added those to the manuscript.
+•	Added J paragraph on gene usage in manuscript, and started dividing Results and Discussion.
+

@@ -20,62 +20,62 @@ Immune repertoire analysis
 Gene expression data matrices from the scRNA-seq analysis were subset to two groups: T cells (CD3-enriched cells), and B cells. To these were integrated the clonotype filtered contig data for each library in the scRepertoire R package (version 1.7.0)[4] using the CombineTCR and CombineBCR functions. Only productive TCR/BCR sequences were kept for subsequent analysis. TCR/BCR repertoire analysis was performed using the Seurat and scRepertoire packages in R. 
 
 Statistical analysis
-The Shannon index was used to calculate the diversity scores for the individual samples, and Wilcoxon’s test was used to compare the clonal diversity indices between samples.[5] Wilcoxon’s signed-rank test was used to detect differentially expressed genes (DEGs) between different subsets of the data. In all statistical comparisons, p values less than 0.05 were considered significant. All statistical analyses were performed using the R programming language.[2]
+The Shannon index was used to calculate the diversity scores for the individual samples[5], and Wilcoxon’s test was used to compare the clonal diversity indices between samples, to compare isotype proportions, and to detect differentially expressed genes (DEGs) between different subsets of the data.[6] In all statistical comparisons, p values less than 0.05 were considered significant. All statistical analyses were performed using the R programming language.[2]
 
-Results and Discussion
+Results
 Single-cell transcriptional profiling
-Thirty cell clusters were identified by the Azimuth application (Figure S1) across 139,987 cells. Of these, 30,071 (21.5%) were from the healthy donors, 15,493 (11.1%) from the mild group, 32,182 (23%) from the moderate group, 10518 (7.5%) from the severe group, and 51,723 (36.9%) from the critical group (Figure S2).
+Thirty cell clusters were identified by the Azimuth application (Figure S1) across 139,987 cells. Of these, 30,071 (21.5%) were from the healthy donors, 15,493 (11.1%) from the mild group, 32,182 (23%) from the moderate group, 10518 (7.5%) from the severe group, and 51,723 (36.9%) from the critical group (Figure 1).
 Upon examining the proportions of the different cell types among the severity groups, some interesting patterns emerged. In all but Patient 2, CD8 TEM cell numbers were inversely proportional to severity; on the other hand, all patients except Patient 5 had plasmablast numbers in direct proportion to severity. In Patient 4, a sharp increase in CD4 TCM and plasmablasts was observed with increased severity, accompanied by a decrease in CD8 TEM. Patient 6, who improved over the course of sample collection (from critical to severe to moderate), had a decrease in CD4 TCM, and an increase in CD8 TEM. Of note, in Patient 5, CD4 TCM cells and plasmablasts witnessed a sharp decrease between critical and severe states, but had an increase upon progressing into the moderate state.
 
-
 BCR
-It has been suggested that Covid-19 patients exhibit distinct immune responses to SARS-CoV-2 infection with varying severities.[6] In this study, we sought to better understand differences in the immune response among different severity groups, as well as patients with different outcomes. In B cell repertoire analysis, special emphasis was given to the most common heavy-chain Immunoglobulin Heavy Variable (IGHV) genes, especially in combination with J genes. These are thought to drive the most variation in B cell receptors (BCRs).[7] 
-	Our data show that BCR V gene usage diversity was significantly higher in healthy controls than COVID-19 patients (Wilcoxon’s test; p value = 2.9 × 10-3). This is in line with expectation and previous reports.[8] Comparing COVID-19 patients with different outcomes, however, showed no significant difference between deceased and recovered patients. Contrary to expectation and previous reports[6], no significant difference in V gene diversity was discerned among the different severity groups.
-The most abundant V–J combination was IGHV4-34–IGHJ5. IGHV4-34, associated with self-reactive antibodies[9], has also previously been observed in COVID-19 patients.[10, 11] The second highest frequency was with IGHV3-23–IGHJ4 (Figure 1), also previously reported to be expanded in COVID-19.[8, 11, 12] IGHV3-33, predicted to play a role in the activation of the immune response, as well as in phagocytosis, was the third most common V gene, in combination with IGHJ4.  (https://www.ncbi.nlm.nih.gov/gene?Db=gene&Cmd=DetailsSearch&Term=28434) Other studies also identified an increase in this gene in association with COVID-19.[8, 10, 13] It is also noteworthy that IGHV3-33 has been detected in potent antibodies in the recipients of malaria vaccination. [14]
+After V(D)J sequence integration into the scRNA-seq data, we obtained 6955 cells classified as B cells by Azimuth—B intermediate (21.6%), B naïve (35.5%), B memory (9.6%), and Plasmablasts (33.3%). Most (42.4%) were from deceased patients’ samples, while 38.7% were from recovered patients, and 18.9% from healthy controls.
+	Our data show that BCR V gene usage diversity was significantly higher in healthy controls than in COVID-19 patients (Wilcoxon’s test; p value = 2.9 × 10-3). This is in line with expectation and previous reports.[7] Comparing COVID-19 patients with different outcomes, however, showed no significant difference between deceased and recovered patients. Contrary to expectation and previous reports[8], no significant differences in V gene diversity were discerned among the different severity groups.
+The most abundant V–J gene usage combination was IGHV4-34–IGHJ5. IGHV4-34, associated with self-reactive antibodies[9], has also previously been observed in COVID-19 patients.[10, 11] The second highest frequency was with IGHV3-23–IGHJ4 (Figure 2), also previously reported to be expanded in COVID-19.[7, 11, 12] IGHV3-33, predicted to play a role in the activation of the immune response, as well as in phagocytosis, was the third most common V gene, in combination with IGHJ4. Other studies also identified an increase in this gene in association with COVID-19.[7, 10, 13] It is also noteworthy that IGHV3-33 has been detected in potent antibodies in the recipients of malaria vaccination. [14]
 Of particular interest was the IGH1-18 gene, observed most commonly with IGHJ3 in the deceased Patient 1 in the critical (and terminal) stage. It has been reported that use of this gene is elevated in acute dengue “without warning signs”[15], and has been identified as first in a panel of biomarkers for predicting complete remission to treatment in patients with proliferative lupus nephritis.[16] IGHV1-18 is also associated with tumor immunity, and others have detected it as a positive prognostic marker gene in immune cells in the melanoma tumor microenvironment.[17, 18]
-Upon stimulation, B cells switch from naïve B cells with IgM or IgD antibodies/receptors to (eventually) antibody-producing plasma cells secreting IgA, IgG, or IgE. Whereas affinity for an antigen is improved through somatic hypermutation in the variable region, this process of changing Ig type, termed class switching, is achieved through recombination in the heavy-chain constant region, and improves a receptor’s effector functions.[19, 20] In our collective data set, the most common isotype was IgM; it was also the most common Ig type in all samples except those of Patient 2 and Patient 3—both deceased. Patient 2 had larger proportions of IgA1, A2, and IgG1; and Patient 3 had A1 in the largest proportions. 
-Isotype diversity showed a similar trend to that in V gene usage, but in the opposite direction: there were more diverse isotypes in COVID-19 patients than in healthy controls (Wilcoxon’s test; p value = 5.9 × 10-3). No significant difference in isotype diversity was found between deceased and recovered patients.
+J gene analysis revealed preferential usage of the IGHJ4 gene for all samples, except for Patient 2, whose samples showed a predominance of IGHJ6 usage. No significant difference was observed in the J gene usage diversity across the samples.
+Upon stimulation, B cells switch from naïve B cells with IgM or IgD antibodies/receptors to (eventually) antibody-producing plasma cells secreting IgA, IgG, or IgE. Whereas affinity for an antigen is improved through somatic hypermutation in the variable region, this process of changing Ig type, termed class switching, is achieved through recombination in the heavy-chain constant region, and improves a receptor’s effector functions.[19, 20] In our collective data set, the most common isotype was IgM; it was also the most common Ig type in all samples except those of Patient 2 and Patient 3—both deceased. Patient 2 had larger proportions of IgA1, IgA2, and IgG1; and Patient 3 had IgA1 in the largest proportions. 
+Isotype diversity showed a similar trend to that in V gene usage, but in the opposite direction: there were more diverse isotypes in COVID-19 patients than in healthy controls (Wilcoxon’s test; p value = 5.9 × 10-3). Again, no significant difference in isotype diversity was found between deceased and recovered patients.
 We will next look for gene expression patterns characteristic of these ineffective clonotypes, which will help us better understand the underlying differences between patients with different outcomes and disease severities.
+
+Discussion
+It has been suggested that Covid-19 patients exhibit distinct immune responses to SARS-CoV-2 infection with varying severities.[8] In this study, we sought to better understand differences in the immune response among different severity groups, as well as patients with different outcomes. In B cell repertoire analysis, special emphasis was given to the most common heavy-chain Immunoglobulin Heavy Variable (IGHV) genes, especially in combination with J genes; as these are thought to drive the most variation in B cell receptors.[21] 
  
-Figure 1. BCR variable (V) and joining (J) gene combination heatmaps. A. V–J gene usage heatmaps in all patients. Rows are V genes; columns are J genes.  B. Bar graphs representing V and J gene usage in the individual samples.                                                         
-Table S1. Patient metadata 
-ID	Library	Severity	Progression	Recovery	Age
-Patient 1	Cov272	Moderate	Moderate -> critical	Dead	88
-	Cov293	Critical			
-Patient 2	Cov303	Moderate	Moderate -> critical	Dead	68
-	Cov308	Critical			
-Patient 3	Cov186	Mild	Mild -> critical	Dead	93
-	Cov213	Critical			
-Patient 4	Cov227	Mild	Mild -> critical	Recovered	65
-	Cov238	Critical			
-Patient 5	Cov119	Critical	Critical -> severe -> moderate 	Recovered	84
-	Cov123	Severe			
-	Cov138	Moderate			
-Patient 6	Cov120	Critical	Critical -> severe > moderate	Recovered	53
-	Cov122	Severe			
-	Cov124	Moderate			
+Figure 1. UMAP representation and labelling of Azimuth clusters by sample. A. Healthy controls and Patients 1-4. B. Patients 5 and 6.  
+ 
+ 
+Figure 2. BCR variable (V) and joining (J) gene combination heatmaps. A. V–J gene usage heatmaps in all patients. Rows are V genes; columns are J genes.  B. Bar graphs representing V and J gene usage in the individual samples.                                                         
+Table S1. Patient metadata.
+ID	Library	Sampling Date (days from onset)	Severity	Progression	Outcome	Outcome Date (days from onset)	Age
+Patient 1	Cov272	3	Moderate	Moderate -> critical	Dead	16	88
+	Cov293	13	Critical				
+Patient 2	Cov303	2	Moderate	Moderate -> critical	Dead	35	68
+	Cov308	11	Critical				
+Patient 3	Cov186	4	Mild	Mild -> critical	Dead	33	93
+	Cov213	14	Critical				
+Patient 4	Cov227	5	Mild	Mild -> critical	Recovered	41	65
+	Cov238	13	Critical				
+Patient 5	Cov119	12	Critical	Critical -> severe -> moderate 	Recovered	40	84
+	Cov123	19	Severe				
+	Cov138	41	Moderate				
+Patient 6	Cov120	14	Critical	Critical -> severe > moderate	Recovered	33	53
+	Cov122	22	Severe				
+	Cov124	29	Moderate				
  
 Figure S1. Azimuth clusters. UMAP representation and labelling of entire dataset (139,987 PBMCs).
  
  
-Figure S2. UMAP representation and labelling of Azimuth clusters by sample. A. Healthy controls and Patients 1-4. B. Patients 5 and 6. 
+Figure S2. BCR variable (V) and joining (J) gene combination heatmaps in healthy controls. A. V–J gene usage heatmaps in all controls. Rows are V genes; columns are V genes.  B. Bar graphs representing V and J gene usage in the individual samples.                                                           
  
-Figure S3. BCR variable (V) and joining (J) gene combination heatmaps in healthy controls. A. V–J gene usage heatmaps in all controls. Rows are V genes; columns are V genes.  B. Bar graphs representing V and J gene usage in the individual samples.                                                          
- 
-
-
-
-
-
+References
 1.	Fukumoto T, Iwasaki S, Fujisawa S, Hayasaka K, Sato K, Oguri S, et al. Efficacy of a novel SARS-CoV-2 detection kit without RNA extraction and purification. Int J Infect Dis. 2020;98:16-7.
 2.	R Core Team. R: A language and environment for statistical computing. R Foundation for Statistical
   Computing. 4.2.1 ed. Vienna, Austria2022.
 3.	Hao Y, Hao S, Andersen-Nissen E, Mauck WM, 3rd, Zheng S, Butler A, et al. Integrated analysis of multimodal single-cell data. Cell. 2021;184(13):3573-87.e29.
 4.	Borcherding N. scRepertoire: A toolkit for single-cell immune receptor profiling. 1.7.0 ed2022.
 5.	Keylock CJ. Simpson diversity and the Shannon–Wiener index as special cases of a generalized entropy. Oikos. 2005;109(1):203-7.
-6.	Zhang F, Gan R, Zhen Z, Hu X, Li X, Zhou F, et al. Correction to: Adaptive immune responses to SARS-CoV-2 infection in severe versus mild individuals. Signal Transduct Target Ther. 2021;6(1):161.
-7.	Zhou JQ, Kleinstein SH. Cutting Edge: Ig H Chains Are Sufficient to Determine Most B Cell Clonal Relationships. J Immunol. 2019;203(7):1687-92.
-8.	Jin X, Zhou W, Luo M, Wang P, Xu Z, Ma K, et al. Global characterization of B cell receptor repertoire in COVID-19 patients by single-cell V(D)J sequencing. Brief Bioinform. 2021;22(6).
+6.	Wilcoxon F. Individual comparisons of grouped data by ranking methods. J Econ Entomol. 1946;39:269.
+7.	Jin X, Zhou W, Luo M, Wang P, Xu Z, Ma K, et al. Global characterization of B cell receptor repertoire in COVID-19 patients by single-cell V(D)J sequencing. Brief Bioinform. 2021;22(6).
+8.	Zhang F, Gan R, Zhen Z, Hu X, Li X, Zhou F, et al. Correction to: Adaptive immune responses to SARS-CoV-2 infection in severe versus mild individuals. Signal Transduct Target Ther. 2021;6(1):161.
 9.	Pascual V, Victor K, Lelsz D, Spellerberg MB, Hamblin TJ, Thompson KM, et al. Nucleotide sequence analysis of the V regions of two IgM cold agglutinins. Evidence that the VH4-21 gene segment is responsible for the major cross-reactive idiotype. J Immunol. 1991;146(12):4385-91.
 10.	Galson JD, Schaetzle S, Bashford-Rogers RJM, Raybould MIJ, Kovaltsuk A, Kilpatrick GJ, et al. Deep Sequencing of B Cell Receptor Repertoires From COVID-19 Patients Reveals Strong Convergent Immune Signatures. Front Immunol. 2020;11:605170.
 11.	Xiang H, Zhao Y, Li X, Liu P, Wang L, Wang M, et al. Landscapes and dynamic diversifications of B-cell receptor repertoires in COVID-19 patients. Human Immunology. 2022;83(2):119-29.
@@ -88,4 +88,5 @@ Figure S3. BCR variable (V) and joining (J) gene combination heatmaps in healthy
 18.	Zhang JA, Zhou XY, Huang D, Luan C, Gu H, Ju M, et al. Development of an Immune-Related Gene Signature for Prognosis in Melanoma. Front Oncol. 2020;10:602555.
 19.	Alam R, Gorska M. 3. Lymphocytes. J Allergy Clin Immunol. 2003;111(2 Suppl):S476-85.
 20.	Alberts BWJHT. Molecular biology of the cell. New York: Garland Science; 2008.
+21.	Zhou JQ, Kleinstein SH. Cutting Edge: Ig H Chains Are Sufficient to Determine Most B Cell Clonal Relationships. J Immunol. 2019;203(7):1687-92.
 
