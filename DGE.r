@@ -54,7 +54,7 @@ dittoPlot(BCR, "HALLMARK_DNA_REPAIR", group.by = "sample") +
 #Printing out the most abundant V-J combinations for each sample:
 hiclo <- NULL
 for (i in levels(factor(BCR@meta.data$sample))) {
-  BCR@meta.data[BCR$sample == i,] %>%
+  BCR@meta.data[BCR$sample == i & !is.na(BCR$v_gene),] %>%
     group_by(v_gene, j_gene, sample)  %>% dplyr::count() %>% na.omit() %>%
     arrange(desc(n)) %>% as.data.frame() -> matrix
     hiclo <- rbind(hiclo, matrix[1,])
@@ -1195,14 +1195,21 @@ ggsave(filename = "graphs/enrichment-pt1-wlx-crit.jpeg", dpi = "print",
            title = "Upregulated in Patient 1 critical"))
 
 
+rm(list=setdiff(ls(), "BCR"))
+
+BCR$comp <- 0
+BCR$comp[BCR$v_gene == "IGHV4-34" & BCR$patient == "Patient 2"] <- 1
+BCR$comp <- as.factor(BCR$comp)
+
 #For Patient 2:
 pt2 <- BCR[,BCR$patient == "Patient 2" & BCR$v_gene == "IGHV4-59"]
+pt2 <- BCR[,BCR$patient == "Patient 2" & BCR$v_gene == "IGHV4-34"]
 pt2$sample <- droplevels(pt2$sample)
 DefaultAssay(pt2) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt2 <- wilcoxauc(pt2, 'sample', c("moderate303_Patient2", "critical308_Patient2"),
+wlx.mrk.pt2 <- wilcoxauc(BCR, 'comp', c(1,0),
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1271,7 +1278,7 @@ write.table(topPathways,
 top <- topPathways %>% group_by(group)
 
 # create a scale.data slot for the selected genes in subset data
-alldata <- ScaleData(object = pt2, 
+alldata <- ScaleData(object = BCR, 
                      features = as.character(unique(top$feature), assay = "RNA"))
 
 DefaultAssay(alldata) <- "RNA"
@@ -1288,10 +1295,13 @@ enrich.topUpcrit2 <- enrichr(genes = topUpcrit$feature,
                                databases = "GO_Biological_Process_2021")
 enrich.topUpmod2 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
+enrich.topDowncrit2 <- enrichr(genes = topDowncrit$feature, 
+                               databases = "GO_Biological_Process_2021")
 
 cat(vapply(str_split(enrich.topUpmod2[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
 cat(vapply(str_split(enrich.topUpcrit2[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
-
+cat(vapply(str_split(enrich.topDowncrit2[["GO_Biological_Process_2021"]]$Term[1:6] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+enrich.topDowncrit2[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topDowncrit2[["GO_Biological_Process_2021"]]$Term ,"[(GO:*)]"), "[", "", 1)
 
 ggsave(filename = "graphs/enrichment-pt2-wlx-crit.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
@@ -1308,6 +1318,14 @@ ggsave(filename = "graphs/enrichment-pt2-wlx-mod.jpeg", dpi = "print",
            xlab = NULL,
            ylab = NULL,
            title = "Upregulated in Patient 2 moderate"))
+
+ggsave(filename = "graphs/enrichment-pt2-wlx-down-crit.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topDowncrit2[[1]], showTerms = 6,
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Downregulated in Patient 2 critical (IGHV4-34)"))
 
 
 rm(list=setdiff(ls(), "BCR"))
@@ -1544,7 +1562,7 @@ ggsave(filename = "graphs/enrichment-pt4-wlx-mod.jpeg", dpi = "print",
 rm(list=setdiff(ls(), "BCR"))
 
 #For Patient 5:
-pt5 <- BCR[,BCR$patient == "Patient 5" & BCR$v_gene == "IGHV3-30"]
+pt5 <- BCR[,BCR$patient == "Patient 5" & BCR$v_gene == "IGHV3-23"]
 pt5$sample <- droplevels(pt5$sample)
 DefaultAssay(pt5) <- "RNA"
 
@@ -1624,6 +1642,8 @@ write.table(topPathways,
             col.names = NA)
 
 top <- topPathways %>% group_by(group) 
+cat(topUpmod$feature[1:10], sep = ", ")
+cat(topUpsev$feature[1:10], sep = ", ")
 
 # create a scale.data slot for the selected genes in subset data
 alldata <- ScaleData(object = pt5, 
@@ -1646,6 +1666,8 @@ enrich.topUpsev5 <- enrichr(genes = topUpsev$feature,
 enrich.topUpmod5 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
 
+cat(vapply(str_split(enrich.topUpmod5[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+cat(vapply(str_split(enrich.topUpsev5[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
 
 ggsave(filename = "graphs/enrichment-pt5-wlx-crit.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
@@ -1674,14 +1696,14 @@ ggsave(filename = "graphs/enrichment-pt5-wlx-mod.jpeg", dpi = "print",
 rm(list=setdiff(ls(), "BCR"))
 
 #For Patient 6:
-pt6 <- BCR[,BCR$patient == "Patient 6" & BCR$v_gene == "IGHV3-23"]
+pt6 <- BCR[,BCR$patient == "Patient 6" & BCR$v_gene == "IGHV4-59"]
 pt6$sample <- droplevels(pt6$sample)
 DefaultAssay(pt6) <- "RNA"
 
-# perform a fast Wilcoxon rank sum test with presto:  , "moderate124_Patient6"
+# perform a fast Wilcoxon rank sum test with presto: "severe122_Patient6", 
 
 wlx.mrk.pt6 <- wilcoxauc(pt6, 'sample',
-                         c("critical120_Patient6", "severe122_Patient6"),
+                         c("critical120_Patient6",  "moderate124_Patient6"),
                          seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1743,6 +1765,9 @@ topDownmod <- ranked.genes %>%
 
 topPathways <- bind_rows(topUpcrit, topDowncrit, topUpsev, topDownsev, topUpmod, topDownmod)
 
+cat(topUpcrit$feature[1:10], sep = ", ")
+cat(topUpmod$feature[1:10], sep = ", ")
+
 # save found markers as exportable table
 write.table(topPathways,
             file = "ranked-genes-rrho-pt6.tsv", 
@@ -1775,6 +1800,9 @@ enrich.topUpsev6 <- enrichr(genes = topUpsev$feature,
                             databases = "GO_Biological_Process_2021")
 enrich.topUpmod6 <- enrichr(genes = topUpmod$feature, 
                             databases = "GO_Biological_Process_2021")
+
+cat(vapply(str_split(enrich.topUpmod6[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+cat(vapply(str_split(enrich.topUpsev6[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
 
 
 ggsave(filename = "graphs/enrichment-pt6-wlx-crit.jpeg", dpi = "print",
