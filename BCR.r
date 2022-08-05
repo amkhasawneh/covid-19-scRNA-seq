@@ -744,6 +744,9 @@ wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "se
 #Critical vs. Healthy (p-value = 0.02381):
 wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "critical"]), 
             y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "healthy"]))
+#Critical/Severe vs. Mild/Moderate (p-value = 0.2824):
+wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "critical" | v.diversity$severity == "severe"]), 
+            y = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "mild" | v.diversity$severity == "moderate"]))
 
 
 #I think we can conclude that there is no difference between severity groups,
@@ -774,16 +777,71 @@ clonotypes <- BCR@meta.data %>%
 clonal <- clonotypes[clonotypes$n > 2,] 
 clonotypes %>% nrow()
 
-nrow(clonal[clonal$severity == "healthy",])/nrow(clonotypes[clonotypes$severity == "healthy",])
-
+#V and J gene usage with sample:
 heavy.chains <- BCR@meta.data[!is.na(BCR$v_gene),] %>%
-  group_by(v_gene, j_gene, severity) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  group_by(v_gene, j_gene, sample, severity, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  as.data.frame() 
+#V and J gene usage without considering samples:
+heavy.chains.general <- BCR@meta.data[!is.na(BCR$v_gene),] %>%
+  group_by(v_gene, j_gene) %>% dplyr::count() %>% arrange(desc(n)) %>%
   as.data.frame() 
 
-clonal.chains <- heavy.chains[heavy.chains$n > 2,]
-nrow(clonal.chains[clonal.chains$severity == "healthy",])/nrow(heavy.chains[heavy.chains$severity == "healthy",])
-nrow(clonal.chains[clonal.chains$severity != "healthy",])/nrow(heavy.chains[heavy.chains$severity != "healthy",])
+#This code helps get a general idea of the amounts of certain V-J combinations
+#in the several groups:
+BCR[,BCR$v_gene == "IGHV3-23" & BCR$j_gene == "IGHJ4"]$sample %>% table()
 
+#Comparing proportions of  clonally expanded BCRs:
+clon.prop <- data.frame()
+for (i in levels(heavy.chains$sample)) {
+  propo <- c(i, sum(heavy.chains[heavy.chains$sample == i & heavy.chains$n > 2,]$n)/sum(heavy.chains[heavy.chains$sample == i,]$n), 
+             levels(factor(heavy.chains$outcome[heavy.chains$sample == i])), 
+             levels(factor(heavy.chains$severity[heavy.chains$sample == i])))
+  clon.prop <- rbind(clon.prop, propo)
+  rownames(clon.prop) <- clon.prop[,1]
+  colnames(clon.prop) <- c("sample", "clonal.proportion", "outcome", "severity")
+}
+
+#Recovered vs. Healthy (p-value = 0.6303):
+wilcox.test(x = as.numeric(clon.prop[clon.prop$outcome == "Recovered",]$clonal.proportion), 
+            y = as.numeric(clon.prop[clon.prop$outcome == "Healthy",]$clonal.proportion))
+#Recovered vs. Deceased (p-value = 0.9497):
+wilcox.test(x = as.numeric(clon.prop[clon.prop$outcome == "Recovered",]$clonal.proportion), 
+            y = as.numeric(clon.prop[clon.prop$outcome == "Deceased",]$clonal.proportion))
+#Deceased vs. Healthy (p-value = 1):
+wilcox.test(x = as.numeric(clon.prop[clon.prop$outcome == "Deceased",]$clonal.proportion), 
+            y = as.numeric(clon.prop[clon.prop$outcome == "Healthy",]$clonal.proportion))
+#Healthy vs. not Healthy(p-value = 0.7676):
+wilcox.test(x = as.numeric(clon.prop[clon.prop$outcome == "Healthy",]$clonal.proportion), 
+            y = as.numeric(clon.prop[clon.prop$outcome != "Healthy",]$clonal.proportion))
+#Nothing significant here.
+
+#Let's try severities:
+#Critical vs. Moderate, deceased (p-value = 0.2):
+wilcox.test(x = as.numeric(clon.prop[clon.prop$outcome == "Deceased" & clon.prop$severity == "moderate",]$clonal.proportion), 
+            y = as.numeric(clon.prop[clon.prop$outcome == "Deceased" & clon.prop$severity == "critical",]$clonal.proportion))
+
+#Critical vs. Moderate, recovered (p-value = 0.2):
+wilcox.test(x = as.numeric(clon.prop[clon.prop$outcome == "Recovered" & clon.prop$severity == "moderate",]$clonal.proportion), 
+            y = as.numeric(clon.prop[clon.prop$outcome == "Recovered" & clon.prop$severity == "critical",]$clonal.proportion))
+
+#Critical vs. Moderate, all (p-value = 0.007992):
+wilcox.test(x = as.numeric(clon.prop[clon.prop$severity == "moderate" | clon.prop$severity == "mild",]$clonal.proportion), 
+            y = as.numeric(clon.prop[clon.prop$severity == "critical" | clon.prop$severity == "severe",]$clonal.proportion))
+#Also... p-value = 0.008369
+t.test(x = as.numeric(clon.prop[clon.prop$severity == "moderate" | clon.prop$severity == "mild",]$clonal.proportion), 
+       y = as.numeric(clon.prop[clon.prop$severity == "critical" | clon.prop$severity == "severe",]$clonal.proportion))
+
+
+#Proportion of IGHV3-23 in several samples (Recovered vs. Deceased p-value = 0.01265):
+v323.prop <- data.frame()
+for (i in levels(heavy.chains$sample)) {
+  propo <- c(i, sum(heavy.chains[heavy.chains$sample == i & heavy.chains$v_gene == "IGHV3-23",]$n)/sum(heavy.chains[heavy.chains$sample == i,]$n), 
+             levels(factor(heavy.chains$outcome[heavy.chains$sample == i])), 
+             levels(factor(heavy.chains$severity[heavy.chains$sample == i])))
+  v323.prop <- rbind(v323.prop, propo)
+  rownames(v323.prop) <- v323.prop[,1]
+  colnames(v323.prop) <- c("sample", "clonal.proportion", "outcome", "severity")
+}
 
 ################################Isotype analysis################################
 
@@ -812,6 +870,49 @@ wilcox.test(x = as.numeric(isotypes$IGHM[isotypes$outcome == "Deceased"]),
 #Healthy vs. not Healthy(p-value = 0.005882):
 wilcox.test(x = as.numeric(isotypes$IGHM[isotypes$outcome == "Healthy"]), 
             y = as.numeric(isotypes$IGHM[isotypes$outcome != "Healthy"]))
+
+#Comparing the different outcome groups' usage of IGHA1:
+#Recovered vs. Healthy (p-value = 0.1939):
+wilcox.test(x = as.numeric(isotypes$IGHA1[isotypes$outcome == "Recovered"]), 
+            y = as.numeric(isotypes$IGHA1[isotypes$outcome == "Healthy"]))
+#Recovered vs. Deceased (p-value = 0.001332):
+wilcox.test(x = as.numeric(isotypes$IGHA1[isotypes$outcome == "Recovered"]), 
+            y = as.numeric(isotypes$IGHA1[isotypes$outcome == "Deceased"]))
+#Deceased vs. Healthy (p-value = 0.02381):
+wilcox.test(x = as.numeric(isotypes$IGHA1[isotypes$outcome == "Deceased"]), 
+            y = as.numeric(isotypes$IGHA1[isotypes$outcome == "Healthy"]))
+#Healthy vs. not Healthy(p-value = 0.04706):
+wilcox.test(x = as.numeric(isotypes$IGHA1[isotypes$outcome == "Healthy"]), 
+            y = as.numeric(isotypes$IGHA1[isotypes$outcome != "Healthy"]))
+
+#Comparing the different outcome groups' usage of IGHA2:
+#Recovered vs. Healthy (p-value = 0.2788):
+wilcox.test(x = as.numeric(isotypes$IGHA2[isotypes$outcome == "Recovered"]), 
+            y = as.numeric(isotypes$IGHA2[isotypes$outcome == "Healthy"]))
+#Recovered vs. Deceased (p-value = 0.04262):
+wilcox.test(x = as.numeric(isotypes$IGHA2[isotypes$outcome == "Recovered"]), 
+            y = as.numeric(isotypes$IGHA2[isotypes$outcome == "Deceased"]))
+#Deceased vs. Healthy (p-value = 0.02381):
+wilcox.test(x = as.numeric(isotypes$IGHA2[isotypes$outcome == "Deceased"]), 
+            y = as.numeric(isotypes$IGHA2[isotypes$outcome == "Healthy"]))
+#Healthy vs. not Healthy(p-value = 0.06765):
+wilcox.test(x = as.numeric(isotypes$IGHA2[isotypes$outcome == "Healthy"]), 
+            y = as.numeric(isotypes$IGHA2[isotypes$outcome != "Healthy"]))
+
+
+#Comparing the different outcome groups' usage of IGHG1:
+#Recovered vs. Healthy (p-value = 0.2788):
+wilcox.test(x = as.numeric(isotypes$IGHG1[isotypes$outcome == "Recovered"]), 
+            y = as.numeric(isotypes$IGHG1[isotypes$outcome == "Healthy"]))
+#Recovered vs. Deceased (p-value = 0.7546):
+wilcox.test(x = as.numeric(isotypes$IGHG1[isotypes$outcome == "Recovered"]), 
+            y = as.numeric(isotypes$IGHG1[isotypes$outcome == "Deceased"]))
+#Deceased vs. Healthy (p-value = 0.2619):
+wilcox.test(x = as.numeric(isotypes$IGHG1[isotypes$outcome == "Deceased"]), 
+            y = as.numeric(isotypes$IGHG1[isotypes$outcome == "Healthy"]))
+#Healthy vs. not Healthy(p-value = 0.1655):
+wilcox.test(x = as.numeric(isotypes$IGHG1[isotypes$outcome == "Healthy"]), 
+            y = as.numeric(isotypes$IGHG1[isotypes$outcome != "Healthy"]))
 
 
 isotypes.healthy <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity == "healthy",] %>%
