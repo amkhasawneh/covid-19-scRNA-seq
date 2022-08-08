@@ -976,7 +976,7 @@ ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
 #This I'll use to extract the other two CDR sequences, for each chain.
 
 sequences <- BCR@meta.data %>%
-  group_by(CTaa, sample, cell) %>% dplyr::count() %>% arrange(desc(n), sample) %>%
+  group_by(CTaa, sample, cell, c_gene, v_gene) %>% dplyr::count() %>% arrange(desc(n)) %>%
   as.data.frame()
 sequences <- mutate(sequences, cdr3 = CTaa, CTaa = NULL)
 sequences$hv3 <- vapply(str_split(sequences$cdr3, "[_]"), "[", "", 1)
@@ -998,7 +998,8 @@ for (i in levels(factor(sequences$folder))) {
       
       lt3 = sequences[sequences$folder == i,][j,]$lt3,
       lt2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2),
-      lt1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1)
+      lt1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1),
+      Ig = sequences[sequences$folder == i,][j,]$c_gene, HV = sequences[sequences$folder == i,][j,]$v_gene
       
     )
      CDR123 <- rbind(CDR123, df)
@@ -1008,8 +1009,31 @@ for (i in levels(factor(sequences$folder))) {
   }
   
 #Save table:
-CDRabundance <- CDR123 %>%
-  group_by(cdr3, hv3, hv2, hv1, lt3, lt2, lt1, sample) %>% 
+CDRabundanceIsotype <- CDR123 %>%
+  group_by(cdr3, hv3, hv2, hv1, lt3, lt2, lt1, sample, Ig) %>% 
   count() %>% arrange(desc(n))
-write.table(CDRabundance, "cdr-aa-sequences-by-sample.tsv", sep = "\t", col.names = NA)
+write.table(CDRabundanceIsotype, "cdr-aa-sequences-by-sample-isotype.tsv", sep = "\t", col.names = NA)
+
+#Making the same, only including the top V genes:
+#Printing out the most abundant V-J combinations for each sample:
+hiclo <- NULL
+for (i in levels(factor(BCR@meta.data$sample))) {
+  BCR@meta.data[BCR$sample == i & !is.na(BCR$v_gene),] %>%
+    group_by(v_gene, j_gene, sample)  %>% dplyr::count() %>% na.omit() %>%
+    arrange(desc(n)) %>% as.data.frame() -> matrix
+  hiclo <- rbind(hiclo, matrix[1,])
+  
+}
+
+#Now, again as above, only including cells with common V genes:
+
+CDRabundancePerSample <-NULL
+for (i in levels(as.factor(CDR123$sample))) {
+  abundance <- CDR123[CDR123$sample == i & CDR123$HV == hiclo$v_gene[hiclo$sample == i], ] %>%
+    group_by(cdr3, hv3, hv2, hv1, lt3, lt2, lt1, sample, HV) %>% na.omit() %>%
+    count() %>% arrange(desc(n)) %>% head(1)
+  CDRabundancePerSample <- rbind(CDRabundancePerSample, abundance) %>% arrange(desc(n))
+  
+}
+write.table(CDRabundancePerSample, "cdr-aa-sequences-by-sample-top-v-genes.tsv", sep = "\t", col.names = NA)
 
