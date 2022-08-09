@@ -171,13 +171,17 @@ BCR$sample <- factor(BCR$sample, levels = c("healthy1_control1", "healthy2_contr
                                             "critical120_Patient6", "severe122_Patient6", "moderate124_Patient6"))
 
 #Adding V and J gene usage:
-BCR$v_gene <- vapply(strsplit(BCR$CTgene, "[.]"), "[", "", 1)
-BCR$v_gene <- sub("(NA)", NA, BCR$v_gene)
-BCR$j_gene <- vapply(strsplit(BCR$CTgene, "[.]"), "[", "", 2)
-BCR$j_gene <- gsub("(.*[KL].*)", NA, BCR$j_gene)
-BCR$c_gene <- vapply(strsplit(vapply(strsplit(BCR$CTgene, "[_]"), "[", "", 1), "[.]"), "[", "", 4)
-BCR$v.j <- paste(BCR$v_gene, BCR$j_gene, sep = ".")
-BCR$v.j[BCR$v.j == "NA.NA"] <- NA
+BCR$HChain <- vapply(strsplit(BCR$CTgene, "[_]"), "[", "", 1)
+BCR$HChain <- sub("(NA)", NA, BCR$HChain)
+BCR$v_gene <- vapply(strsplit(BCR$HChain, "[.]"), "[", "", 1)
+BCR$j_gene <- vapply(strsplit(BCR$HChain, "[.]"), "[", "", 2)
+BCR$c_gene <- vapply(strsplit(BCR$HChain, "[.]"), "[", "", 4)
+
+BCR$LChain <- vapply(strsplit(BCR$CTgene, "[_]"), "[", "", 2)
+BCR$LChain <- sub("(NA)", NA, BCR$LChain)
+BCR$lkv_gene <- vapply(strsplit(BCR$LChain, "[.]"), "[", "", 1)
+BCR$lkj_gene <- vapply(strsplit(BCR$LChain, "[.]"), "[", "", 2)
+BCR$lkc_gene <- vapply(strsplit(BCR$LChain, "[.]"), "[", "", 3)
 
 saveRDS(BCR, "05-BCR-combined.rds")
 
@@ -976,7 +980,7 @@ ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
 #This I'll use to extract the other two CDR sequences, for each chain.
 
 sequences <- BCR@meta.data %>%
-  group_by(CTaa, sample, cell, c_gene, v_gene) %>% dplyr::count() %>% arrange(desc(n)) %>%
+  group_by(CTaa, sample, cell,  v_gene, j_gene, c_gene, lkv_gene, lkj_gene, lkc_gene) %>%
   as.data.frame()
 sequences <- mutate(sequences, cdr3 = CTaa, CTaa = NULL)
 sequences$hv3 <- vapply(str_split(sequences$cdr3, "[_]"), "[", "", 1)
@@ -999,7 +1003,8 @@ for (i in levels(factor(sequences$folder))) {
       lt3 = sequences[sequences$folder == i,][j,]$lt3,
       lt2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2),
       lt1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1),
-      Ig = sequences[sequences$folder == i,][j,]$c_gene, HV = sequences[sequences$folder == i,][j,]$v_gene
+      HV = sequences[sequences$folder == i,][j,]$v_gene, HJ = sequences[sequences$folder == i,][j,]$j_gene, Ig = sequences[sequences$folder == i,][j,]$c_gene, 
+      LV = sequences[sequences$folder == i,][j,]$lkv_gene, LJ = sequences[sequences$folder == i,][j,]$lkj_gene, LC = sequences[sequences$folder == i,][j,]$lkc_gene
       
     )
      CDR123 <- rbind(CDR123, df)
@@ -1037,3 +1042,8 @@ for (i in levels(as.factor(CDR123$sample))) {
 }
 write.table(CDRabundancePerSample, "cdr-aa-sequences-by-sample-top-v-genes.tsv", sep = "\t", col.names = NA)
 
+#Again, only this time, including all V(D)J genes of both chains:
+CDRabundanceIsotype <- CDR123 %>%
+  group_by(cdr3, hv3, hv2, hv1, lt3, lt2, lt1, sample, HV, HJ, Ig, LV, LJ, LC) %>% 
+  count() %>% arrange(desc(n))
+write.table(CDRabundanceIsotype, "cdr-aa-sequences-by-sample-heavy-light.tsv", sep = "\t", col.names = NA)
