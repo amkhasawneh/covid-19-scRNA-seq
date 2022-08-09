@@ -170,6 +170,9 @@ BCR$sample <- factor(BCR$sample, levels = c("healthy1_control1", "healthy2_contr
                                             "critical119_Patient5", "severe123_Patient5", "moderate138_Patient5",
                                             "critical120_Patient6", "severe122_Patient6", "moderate124_Patient6"))
 
+#Modifying cell type column:
+BCR$azimuthNames <- factor(BCR$azimuthNames, levels = c("B intermediate", "B memory", "B naive", "Plasmablast"))
+
 #Adding V and J gene usage:
 BCR$HChain <- vapply(strsplit(BCR$CTgene, "[_]"), "[", "", 1)
 BCR$HChain <- sub("(NA)", NA, BCR$HChain)
