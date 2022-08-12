@@ -8,24 +8,28 @@ covid <- readRDS("04-covid-clustered.rds")
 BCR <- readRDS("05-BCR-combined.rds")
 BCR <- BCR[,BCR$patient != "Control 4"]
 BCR@meta.data$sample <- droplevels(BCR@meta.data$sample)
+cols <- c("B intermediate" = "#00b8ff", "B memory" = "#000000", "B naive" = "#9fcb92", "Plasmablast" = "#fe7726")
 
 ####################################UMAPs#######################################
+
+rm(list = setdiff(ls(), c("covid")))
+gc()
+
 #UMAP plots for control samples:
 ggsave(filename = "azimuth-healthy-all.jpeg", path = "./graphs/", 
        dpi = "print", width = 10, height = 5,
        plot = DimPlot(covid[,covid$severity == "healthy"], reduction = "umap",
                       repel = T) + ggtitle("Controls") +
          theme(plot.title = element_text(hjust = 0.5)))
+
 ggsave(filename = "azimuth-healthy-grid.tiff", path = "./graphs/", 
-       dpi = "print", width = 15, height = 5,
+       dpi = "print", width = 20, height = 5,
        plot = DimPlot(covid[,covid$severity == "healthy" & covid$patient != "Control 4"], reduction = "umap",
-                      repel = T, split.by = "patient") + NoLegend())
-DimPlot(covid[,covid$sample == i], reduction = "umap",
-        repel = T, label = T) + NoLegend()
+                      repel = T, split.by = "patient"))
 
 #UMAP plots for individual patients:
 #Patient1:
-pt1 <- covid[,covid$patient == "Patient1"]
+pt1 <- covid[,covid$patient == "Patient 1"]
 pt1$severity <- factor(pt1$severity, levels = c("moderate", "critical"))
 
 ggsave(filename = "azimuth-pt1.tiff", path = "./graphs/", 
@@ -35,8 +39,9 @@ ggsave(filename = "azimuth-pt1.tiff", path = "./graphs/",
          NoLegend() +
          ggtitle("Patient 1") + theme(plot.title = element_text(hjust = 0.5)))
 
+
 #Patient2:
-pt2 <- covid[,covid$patient == "Patient2"]
+pt2 <- covid[,covid$patient == "Patient 2"]
 pt2$severity <- factor(pt2$severity, levels = c("moderate", "critical"))
 
 ggsave(filename = "azimuth-pt2.jpeg", path = "./graphs/", 
@@ -47,7 +52,7 @@ ggsave(filename = "azimuth-pt2.jpeg", path = "./graphs/",
          ggtitle("Patient 2") + theme(plot.title = element_text(hjust = 0.5)))
 
 #Patient3:
-pt3 <- covid[,covid$patient == "Patient3"]
+pt3 <- covid[,covid$patient == "Patient 3"]
 pt3$severity <- factor(pt3$severity, levels = c("mild", "critical"))
 
 ggsave(filename = "azimuth-pt3.jpeg", path = "./graphs/", 
@@ -58,7 +63,7 @@ ggsave(filename = "azimuth-pt3.jpeg", path = "./graphs/",
          ggtitle("Patient 3") + theme(plot.title = element_text(hjust = 0.5)))
 
 #Patient4:
-pt4 <- covid[,covid$patient == "Patient4"]
+pt4 <- covid[,covid$patient == "Patient 4"]
 pt4$severity <- factor(pt4$severity, levels = c("mild", "critical"))
 
 ggsave(filename = "azimuth-pt4.jpeg", path = "./graphs/", 
@@ -69,7 +74,7 @@ ggsave(filename = "azimuth-pt4.jpeg", path = "./graphs/",
          ggtitle("Patient 4") + theme(plot.title = element_text(hjust = 0.5)))
 
 #Patient5:
-pt5 <- covid[,covid$patient == "Patient5"]
+pt5 <- covid[,covid$patient == "Patient 5"]
 pt5$severity <- factor(pt5$severity, levels = c("critical", "severe", "moderate"))
 
 ggsave(filename = "azimuth-pt5.jpeg", path = "./graphs/", 
@@ -80,7 +85,7 @@ ggsave(filename = "azimuth-pt5.jpeg", path = "./graphs/",
          ggtitle("Patient 5") + theme(plot.title = element_text(hjust = 0.5)))
 
 #Patient6:
-pt6 <- covid[,covid$patient == "Patient6"]
+pt6 <- covid[,covid$patient == "Patient 6"]
 pt6$severity <- factor(pt6$severity, levels = c("critical", "severe", "moderate"))
 
 ggsave(filename = "azimuth-pt6.jpeg", path = "./graphs/", 
@@ -104,6 +109,10 @@ for (i in levels(as.factor(covid[,covid$severity == "healthy"]$patient))) {
 
 
 ####################################BCR#########################################
+
+cols <- c("B naive" = "#1e90ff", "Plasmablast" = "#ff584f", "B intermediate" = "#c71585", "B memory" = "#00fa9a")
+DimPlot(BCR, cols = cols, group.by = "azimuthNames", repel = T)
+
 #B cell distribution bar graphs:
 for (i in levels(factor(BCR$sample))) {
   
@@ -119,15 +128,17 @@ for (i in levels(factor(BCR$sample))) {
 }
 
 #Histograms for V gene usage in all:
-BCR@meta.data %>%
+BCR@meta.data[!is.na(BCR$v_gene),] %>%
         as.data.frame() -> df
 df$v_gene <- vapply(strsplit(df$v_gene, "[V]"), "[", "", 2)
 df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 
+ 
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-geom_bar() + 
-xlab("V Gene") + ylab("Count") + ggtitle("All") +
+geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  scale_y_continuous(labels=scales::percent) +  
+xlab("V Gene") + ylab("Percentage") + ggtitle("All") +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
@@ -146,14 +157,16 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$patient <- factor(df$patient, levels = c("Control 1", "Control 2", "Control 3"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-geom_bar() + facet_wrap(~patient, ncol = 1) +
-xlab("V Gene") + ylab("Count") + 
+  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  scale_y_continuous(labels=scales::percent) + facet_wrap(~patient, ncol = 1) +
+  xlab("V Gene") + ylab("Percentage") + 
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 20)) + 
-        scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
-                                                      "#4666FF", "#EEE600", "#39FF14"))
+        strip.text = element_text(size = 30),
+        plot.title = element_text(size = 30)) + 
+  scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
+                                                "#4666FF", "#EEE600", "#39FF14"))
 
 ggsave(filename = paste0("v-j-gene-bar-hc-stacked.jpeg"), plot = plot,
        dpi = "print", height = 10, width = 20, path = "./graphs/")
@@ -167,12 +180,14 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("moderate", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-geom_bar() + facet_wrap(~severity, ncol = 1) +
-xlab("V Gene") + ylab("Count") + ggtitle(df$patient) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 20)) + 
+        strip.text = element_text(size = 30),
+        plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
@@ -188,14 +203,16 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("moderate", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-geom_bar() + facet_wrap(~severity, ncol = 1) +
-xlab("V Gene") + ylab("Count") + ggtitle(df$patient) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 20)) + 
+        strip.text = element_text(size = 30),
+        plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
-                                                "#4666FF", "#EEE600", "#39FF14")) 
+                                                "#4666FF", "#EEE600", "#39FF14"))
     
 ggsave(filename = paste0("v-j-gene-bar-pt2-stacked.jpeg"), plot = plot,
              dpi = "print", height = 10, width = 20, path = "./graphs/")
@@ -209,12 +226,14 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("mild", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-geom_bar() + facet_wrap(~severity, ncol = 1) +
-xlab("V Gene") + ylab("Count") + ggtitle(df$patient) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 20)) + 
+        strip.text = element_text(size = 30),
+        plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
@@ -230,12 +249,14 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("mild", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-geom_bar() + facet_wrap(~severity, ncol = 1) +
-xlab("V Gene") + ylab("Count") + ggtitle(df$patient) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 20)) + 
+        strip.text = element_text(size = 30),
+        plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14")) 
     
@@ -251,12 +272,14 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("critical", "severe", "moderate"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-geom_bar() + facet_wrap(~severity, ncol = 1) +
-xlab("V Gene") + ylab("Count") + ggtitle(df$patient) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 20)) + 
+        strip.text = element_text(size = 30),
+        plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
@@ -272,12 +295,14 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("critical", "severe", "moderate"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-geom_bar() + facet_wrap(~severity, ncol = 1) +
-xlab("V Gene") + ylab("Count") + ggtitle(df$patient) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
 theme(axis.text.x = element_text(angle = 90, size = 24),
       axis.text.y = element_text(size = 15),
       axis.title = element_text(size = 20),
-      strip.text = element_text(size = 20)) + 
+      strip.text = element_text(size = 30),
+      plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
@@ -500,3 +525,343 @@ for (i in levels(factor(BCR@meta.data$sample))) {
                          labels_col = vapply(strsplit(colnames(matrix), "[H]"), "[", "", 2), column_names_rot = 45,
                          fontsize = 26, fontsize_col = 60, fontsize_row = 60))
 }
+
+####################################Barplots####################################
+cols <- c("B intermediate" = "#00b8ff", "B memory" = "#000000", "B naive" = "#9fcb92", "Plasmablast" = "#fe7726")
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#Healthy controls:
+cellNumPercentage_hc1 <- (table(BCR[,BCR$sample == "healthy1_control1"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "healthy1_control1"]$azimuthNames)))*100
+cellNumPercentage_hc2 <- (table(BCR[,BCR$sample == "healthy2_control2"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "healthy2_control2"]$azimuthNames)))*100
+cellNumPercentage_hc3 <- (table(BCR[,BCR$sample == "healthy3_control3"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "healthy3_control3"]$azimuthNames)))*100
+
+# combine and make a matrix
+cellNumPercentage_hc1 <- as.data.frame(cellNumPercentage_hc1)
+cellNumPercentage_hc2 <- as.data.frame(cellNumPercentage_hc2)
+cellNumPercentage_hc3 <- as.data.frame(cellNumPercentage_hc3)
+
+
+cellNumPercentage_hc <- dplyr::full_join(cellNumPercentage_hc1, cellNumPercentage_hc2, by=c("Var1"))
+cellNumPercentage_hc <- dplyr::full_join(cellNumPercentage_hc, cellNumPercentage_hc3, by=c("Var1"))
+
+
+cellNumPercentage_hc[is.na(cellNumPercentage_hc)] <- 0
+rownames(cellNumPercentage_hc) <- cellNumPercentage_hc[,1]
+colnames(cellNumPercentage_hc) <- c("cellType","Control 1","Control 2", "Control 3")
+cellNumPercentage_hc <- cellNumPercentage_hc[,-1]
+
+
+tiff(file = "graphs/barplot-healthy.tiff", width = 10, height = 10, units = "in", res = 300)
+par(mai = c(1, 1.4, 0.82, 1.88))
+par(bty = "l")
+barplot(as.matrix(cellNumPercentage_hc), 
+        width = 0.5, las = 2, col = cols,
+        legend.text = TRUE, 
+        font.axis = 1, las = 1,
+        args.legend = list(x = 2.39, y = 55, bty = "n", cex = 1.4)) 
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#Patient 1:
+cellNumPercentage_moderateP1 <- (table(BCR[,BCR$sample == "moderate272_Patient1"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "moderate272_Patient1"]$azimuthNames)))*100
+cellNumPercentage_criticalP1 <- (table(BCR[,BCR$sample == "critical293_Patient1"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "critical293_Patient1"]$azimuthNames)))*100
+
+# combine and make a matrix
+cellNumPercentage_moderateP1 <- as.data.frame(cellNumPercentage_moderateP1)
+cellNumPercentage_criticalP1 <- as.data.frame(cellNumPercentage_criticalP1)
+
+cellNumPercentage_P1 <- dplyr::full_join(cellNumPercentage_moderateP1, cellNumPercentage_criticalP1, by=c("Var1"))
+
+
+cellNumPercentage_P1[is.na(cellNumPercentage_P1)] <- 0
+rownames(cellNumPercentage_P1) <- cellNumPercentage_P1[,1]
+colnames(cellNumPercentage_P1) <- c("cellType","moderate","critical")
+cellNumPercentage_P1 <- cellNumPercentage_P1[,-1]
+
+
+tiff(file="graphs/barplot-Patient1.tiff", width=10, height=10, units="in", res=300)
+par(mai=c(1, 1.4, 0.82, 1.42))
+par(bty="l")
+barplot(as.matrix(cellNumPercentage_P1), 
+        width = 0.5, las=2, col=cols,
+        legend.text=F, 
+        font.axis = 1, las = 1,
+        args.legend=list(x=1.4,y=100,bty="n", cex=0.7)) 
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#Patient 2:
+cellNumPercentage_moderateP2 <- (table(BCR[,BCR$sample == "moderate303_Patient2"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "moderate303_Patient2"]$azimuthNames)))*100
+cellNumPercentage_criticalP2 <- (table(BCR[,BCR$sample == "critical308_Patient2"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "critical308_Patient2"]$azimuthNames)))*100
+
+# combine and make a matrix
+cellNumPercentage_moderateP2 <- as.data.frame(cellNumPercentage_moderateP2)
+cellNumPercentage_criticalP2 <- as.data.frame(cellNumPercentage_criticalP2)
+
+cellNumPercentage_P2 <- dplyr::full_join(cellNumPercentage_moderateP2, cellNumPercentage_criticalP2, by=c("Var1"))
+
+
+cellNumPercentage_P2[is.na(cellNumPercentage_P2)] <- 0
+rownames(cellNumPercentage_P2) <- cellNumPercentage_P2[,1]
+colnames(cellNumPercentage_P2) <- c("cellType","moderate","critical")
+cellNumPercentage_P2 <- cellNumPercentage_P2[,-1]
+
+
+tiff(file="graphs/barplot-Patient2.tiff", width=10, height=10, units="in", res=300)
+par(mai=c(1, 1.4, 0.82, 1.42))
+par(bty="l")
+barplot(as.matrix(cellNumPercentage_P2), 
+        width = 0.5, las=2, col=cols,
+        legend.text=F, 
+        font.axis = 1, las = 1,
+        args.legend=list(x=1.4,y=100,bty="n", cex=0.7)) 
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#Patient 3:
+cellNumPercentage_mildP3 <- (table(BCR[,BCR$sample == "mild186_Patient3"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "mild186_Patient3"]$azimuthNames)))*100
+cellNumPercentage_criticalP3 <- (table(BCR[,BCR$sample == "critical213_Patient3"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "critical213_Patient3"]$azimuthNames)))*100
+
+# combine and make a matrix
+cellNumPercentage_mildP3 <- as.data.frame(cellNumPercentage_mildP3)
+cellNumPercentage_criticalP3 <- as.data.frame(cellNumPercentage_criticalP3)
+
+cellNumPercentage_P3 <- dplyr::full_join(cellNumPercentage_mildP3, cellNumPercentage_criticalP3, by=c("Var1"))
+
+
+cellNumPercentage_P3[is.na(cellNumPercentage_P3)] <- 0
+rownames(cellNumPercentage_P3) <- cellNumPercentage_P3[,1]
+colnames(cellNumPercentage_P3) <- c("cellType","mild","critical")
+cellNumPercentage_P3 <- cellNumPercentage_P3[,-1]
+
+
+tiff(file="graphs/barplot-Patient3.tiff", width=10, height=10, units="in", res=300)
+par(mai=c(1, 1.4, 0.82, 1.42))
+par(bty="l")
+barplot(as.matrix(cellNumPercentage_P3), 
+        width = 0.5, las=2, col=cols,
+        legend.text=F, 
+        font.axis = 1, las = 1,
+        args.legend=list(x=1.4,y=100,bty="n", cex=0.7)) 
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#Patient 4:
+cellNumPercentage_mildP4 <- (table(BCR[,BCR$sample == "mild227_Patient4"]$azimuthNames)/
+                               sum(table(BCR[,BCR$sample == "mild227_Patient4"]$azimuthNames)))*100
+cellNumPercentage_criticalP4 <- (table(BCR[,BCR$sample == "critical238_Patient4"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "critical238_Patient4"]$azimuthNames)))*100
+
+# combine and make a matrix
+cellNumPercentage_mildP4 <- as.data.frame(cellNumPercentage_mildP4)
+cellNumPercentage_criticalP4 <- as.data.frame(cellNumPercentage_criticalP4)
+
+cellNumPercentage_P4 <- dplyr::full_join(cellNumPercentage_mildP4, cellNumPercentage_criticalP4, by=c("Var1"))
+
+
+cellNumPercentage_P4[is.na(cellNumPercentage_P4)] <- 0
+rownames(cellNumPercentage_P4) <- cellNumPercentage_P4[,1]
+colnames(cellNumPercentage_P4) <- c("cellType","mild","critical")
+cellNumPercentage_P4 <- cellNumPercentage_P4[,-1]
+
+
+tiff(file="graphs/barplot-Patient4.tiff", width=10, height=10, units="in", res=300)
+par(mai=c(1, 1.4, 0.82, 1.42))
+par(bty="l")
+barplot(as.matrix(cellNumPercentage_P4), 
+        width = 0.5, las=2, col=cols,
+        legend.text=F, 
+        font.axis = 1, las = 1,
+        args.legend=list(x=1.4,y=100,bty="n", cex=0.7)) 
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#Patient 5:
+cellNumPercentage_criticalP5 <- (table(BCR[,BCR$sample == "critical119_Patient5"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "critical119_Patient5"]$azimuthNames)))*100
+cellNumPercentage_severeP5 <- (table(BCR[,BCR$sample == "severe123_Patient5"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "severe123_Patient5"]$azimuthNames)))*100
+cellNumPercentage_moderateP5 <- (table(BCR[,BCR$sample == "moderate138_Patient5"]$azimuthNames)/
+                               sum(table(BCR[,BCR$sample == "moderate138_Patient5"]$azimuthNames)))*100
+
+
+# combine and make a matrix
+cellNumPercentage_criticalP5 <- as.data.frame(cellNumPercentage_criticalP5)
+cellNumPercentage_severeP5 <- as.data.frame(cellNumPercentage_severeP5)
+cellNumPercentage_moderateP5 <- as.data.frame(cellNumPercentage_moderateP5)
+
+
+cellNumPercentage_P5 <- dplyr::full_join(cellNumPercentage_criticalP5, cellNumPercentage_severeP5, by=c("Var1"))
+cellNumPercentage_P5 <- full_join(cellNumPercentage_P5, cellNumPercentage_moderateP5, by=c("Var1"))
+
+
+cellNumPercentage_P5[is.na(cellNumPercentage_P5)] <- 0
+rownames(cellNumPercentage_P5) <- cellNumPercentage_P5[,1]
+cellNumPercentage_P5 <- cellNumPercentage_P5[,-1]
+colnames(cellNumPercentage_P5) <- c("critical", "severe", "moderate")
+
+tiff(file="graphs/barplot-Patient5.tiff", width=10, height=10, units="in", res=300)
+par(mai=c(1, 1.4, 0.82, 1.42))
+par(bty="l")
+barplot(as.matrix(cellNumPercentage_P5), 
+        width = 0.5, las=2, col=cols,
+        legend.text=F, 
+        font.axis = 1, las = 1,
+        args.legend=list(x=2.15,y=100,bty="n", cex=0.7)) 
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#Patient 6:
+cellNumPercentage_criticalP6 <- (table(BCR[,BCR$sample == "critical120_Patient6"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "critical120_Patient6"]$azimuthNames)))*100
+cellNumPercentage_severeP6 <- (table(BCR[,BCR$sample == "severe122_Patient6"]$azimuthNames)/
+                                   sum(table(BCR[,BCR$sample == "severe122_Patient6"]$azimuthNames)))*100
+cellNumPercentage_moderateP6 <- (table(BCR[,BCR$sample == "moderate124_Patient6"]$azimuthNames)/
+                               sum(table(BCR[,BCR$sample == "moderate124_Patient6"]$azimuthNames)))*100
+
+
+# combine and make a matrix
+cellNumPercentage_criticalP6 <- as.data.frame(cellNumPercentage_criticalP6)
+cellNumPercentage_severeP6 <- as.data.frame(cellNumPercentage_severeP6)
+cellNumPercentage_moderateP6 <- as.data.frame(cellNumPercentage_moderateP6)
+
+
+cellNumPercentage_P6 <- dplyr::full_join(cellNumPercentage_criticalP6, cellNumPercentage_severeP6, by=c("Var1"))
+cellNumPercentage_P6 <- full_join(cellNumPercentage_P6, cellNumPercentage_moderateP6, by=c("Var1"))
+
+
+cellNumPercentage_P6[is.na(cellNumPercentage_P6)] <- 0
+rownames(cellNumPercentage_P6) <- cellNumPercentage_P6[,1]
+cellNumPercentage_P6 <- cellNumPercentage_P6[,-1]
+colnames(cellNumPercentage_P6) <- c("critical", "severe", "moderate")
+
+tiff(file="graphs/barplot-Patient6.tiff", width=10, height=10, units="in", res=300)
+par(mai=c(1, 1.4, 0.82, 1.42))
+par(bty="l")
+barplot(as.matrix(cellNumPercentage_P6), 
+        width = 0.5, las=2, col=cols,
+        legend.text=F, 
+        font.axis = 1, las = 1,
+        args.legend=list(x=2.15,y=100,bty="n", cex=0.7)) 
+dev.off()
+
+####################################B cell UMAPs################################
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+#For controls:
+tiff(file = "graphs/umap-bcr-healthy-grid.tiff", width = 20, height = 5, units = "in", res = 300)
+par(bty = "l")
+DimPlot(object = BCR[,BCR$severity == "healthy"], 
+        group.by = "azimuthNames", split.by = "patient",
+        reduction = "umap", pt.size=1.5, cols = cols,
+        label = TRUE, label.size = 3,  repel = TRUE
+) + labs(title = "")
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#For Patient 1:
+pt1 <- BCR[,BCR$patient == "Patient 1"]
+pt1$severity <- factor(pt1$severity, levels = c("moderate", "critical"))
+
+tiff(file = "graphs/umap-bcr-pt1-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+par(bty = "l")
+DimPlot(object = pt1, 
+        group.by = "azimuthNames", split.by = "severity",
+        reduction = "umap", pt.size=1.5, cols = cols,
+        label = TRUE, label.size = 3,  repel = TRUE
+) + labs(title = "Patient 1") + NoLegend()
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#For Patient 2:
+pt2 <- BCR[,BCR$patient == "Patient 2"]
+pt2$severity <- factor(pt2$severity, levels = c("moderate", "critical"))
+
+tiff(file = "graphs/umap-bcr-pt2-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+par(bty = "l")
+DimPlot(object = pt2, 
+        group.by = "azimuthNames", split.by = "severity",
+        reduction = "umap", pt.size=1.5, cols = cols,
+        label = TRUE, label.size = 3,  repel = TRUE
+) + labs(title = "Patient 2") + NoLegend()
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#For Patient 3:
+pt3 <- BCR[,BCR$patient == "Patient 3"]
+pt3$severity <- factor(pt3$severity, levels = c("mild", "critical"))
+
+tiff(file = "graphs/umap-bcr-pt3-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+par(bty = "l")
+DimPlot(object = pt3, 
+        group.by = "azimuthNames", split.by = "severity",
+        reduction = "umap", pt.size=1.5, cols = cols,
+        label = TRUE, label.size = 3,  repel = TRUE
+) + labs(title = "Patient 3") + NoLegend()
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#For Patient 4:
+pt4 <- BCR[,BCR$patient == "Patient 4"]
+pt4$severity <- factor(pt4$severity, levels = c("mild", "critical"))
+
+tiff(file = "graphs/umap-bcr-pt4-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+par(bty = "l")
+DimPlot(object = pt4, 
+        group.by = "azimuthNames", split.by = "severity",
+        reduction = "umap", pt.size=1.5, cols = cols,
+        label = TRUE, label.size = 3,  repel = TRUE
+) + labs(title = "Patient 4") + NoLegend()
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#For Patient 5:
+pt5 <- BCR[,BCR$patient == "Patient 5"]
+pt5$severity <- factor(pt5$severity, levels = c("critical", "severe", "moderate"))
+
+tiff(file = "graphs/umap-bcr-pt5-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+par(bty = "l")
+DimPlot(object = pt5, 
+        group.by = "azimuthNames", split.by = "severity",
+        reduction = "umap", pt.size=1.5, cols = cols,
+        label = TRUE, label.size = 3,  repel = TRUE
+) + labs(title = "Patient 5") + NoLegend()
+dev.off()
+
+rm(list=setdiff(ls(), c("BCR", "cols")))
+
+#For Patient 6:
+pt6 <- BCR[,BCR$patient == "Patient 6"]
+pt6$severity <- factor(pt6$severity, levels = c("critical", "severe", "moderate"))
+
+tiff(file = "graphs/umap-bcr-pt6-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+par(bty = "l")
+DimPlot(object = pt6, 
+        group.by = "azimuthNames", split.by = "severity",
+        reduction = "umap", pt.size=1.5, cols = cols,
+        label = TRUE, label.size = 3,  repel = TRUE
+) + labs(title = "Patient 6") + NoLegend()
+dev.off()
+
+
