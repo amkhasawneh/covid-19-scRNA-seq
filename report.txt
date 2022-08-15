@@ -118,7 +118,7 @@ Done ones:
 •	Adjusted the cdr3 list, to also include the V, D, and J genes from both chains.
 •	What exactly is cdr3? How is it different from what we’ve done so far?
 It is the junctional site of V(D)J recombination. Cells with identical CDR3s are considered of the same clone.
-•	Removed heatmap for all in Figure 2 and s2.
+•	Removed heatmaps for all in Figure 2 and S2.
 •	Changed bar graphs to percentage (y-axis), finally! This is the best way to do it:
 … +
 geom_bar(aes(y = (..count..)/sum(..count..))) + 
@@ -127,4 +127,41 @@ geom_bar(aes(y = (..count..)/sum(..count..))) +
 •	Made B cell distribution bar plots, using the scripts from Jessica.
 To-dos:
 •	Refer to PowerPoint file from Tabe Sensei!
+ 
+Exp. 011			                                   		                	  2022.08.10
+
+
+Done ones:
+•	Performed the tasks requested by Scientific Reports for Takahashi’s antibody manuscript. This took all day, and the most challenging part was editing the PDF for author consent to change author list.
+ 
+Exp. 012			                                   		                	  2022.08.12
+
+
+Done ones:
+•	Redid the bar plots, with a new color palette, and matching UMAPs; added all to PowerPoint file from Sensei; removed legends from all plots except the controls’ bar plot, which I made large. 
+•	Remembered to commit figures.r file, which already was part of the repository.
+•	Proofread Takahashi’s antibody manuscript. Hopefully it’s now ready for resubmission, pending the author list change consent form.
+•	Added IGHV abundance table in Tabe Sensei’s PowerPoint file.
+Tasks:
+•	Make heatmaps that look like Jessica’s (I think; need Sensei’s confirmation).
+•	DGE and GSEA (and maybe pathway) analysis and plots to go with it.
+
+
+
+
+
+	
+ 
+Exp. 013			                                   		                	  2022.08.15
+
+
+Done things:
+•	Make heatmaps that look like Jessica’s? No. 
+•	Started GSEA analysis using Hot Tommy’s tutorial online.
+•	Signed the author list form from Scientific Reports, and sent it to Sensei.
+
+Tasks:
+•	Make sure the bar plot percentages for V gene usage are for each sample.
+•	Continue GSEA and DGE analysis.
+
 
