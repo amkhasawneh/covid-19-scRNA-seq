@@ -157,7 +157,7 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$patient <- factor(df$patient, levels = c("Control 1", "Control 2", "Control 3"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
   scale_y_continuous(labels=scales::percent) + facet_wrap(~patient, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + 
   theme(axis.text.x = element_text(angle = 90, size = 24),
@@ -180,7 +180,7 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("moderate", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
   scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
@@ -203,7 +203,7 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("moderate", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
   scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
@@ -226,7 +226,7 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("mild", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
   scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
@@ -249,7 +249,7 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("mild", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
   scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
@@ -272,7 +272,7 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("critical", "severe", "moderate"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
   scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
@@ -295,7 +295,7 @@ df$j_gene <- vapply(strsplit(df$j_gene, "[J]"), "[", "", 2)
 df$severity <- factor(df$severity, levels = c("critical", "severe", "moderate"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
-  geom_bar(aes(y = (..count..)/sum(..count..))) + 
+  geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
   scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
 xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
 theme(axis.text.x = element_text(angle = 90, size = 24),
@@ -765,13 +765,13 @@ dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
 #For controls:
-tiff(file = "graphs/umap-bcr-healthy-grid.tiff", width = 20, height = 5, units = "in", res = 300)
+tiff(file = "graphs/umap-bcr-healthy-grid.tiff", width = 15, height = 5, units = "in", res = 300)
 par(bty = "l")
 DimPlot(object = BCR[,BCR$severity == "healthy"], 
         group.by = "azimuthNames", split.by = "patient",
         reduction = "umap", pt.size=1.5, cols = cols,
         label = TRUE, label.size = 3,  repel = TRUE
-) + labs(title = "")
+) + labs(title = "") + NoLegend()
 dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
