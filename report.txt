@@ -164,4 +164,19 @@ Tasks:
 •	Make sure the bar plot percentages for V gene usage are for each sample.
 •	Continue GSEA and DGE analysis.
 
+ 
+Exp. 014			                                   		                	  2022.08.16
+
+
+Done things:
+•	Submitted Tahakashi’s manuscript and sent the changed authorship form.
+•	Made the bar plot percentages for V gene usage separate for each sample, using this for the aes inside the geom_bar() function:
+
+aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])
+•	Inserted the above bar plots into the “manuscript”.
+•	Started GSEA analysis, but the fgsea function only gives results and graphs for Patient 1, Patient 2 (none significant), and Patient 5 (only moderate).
+
+Tasks:
+•	Adjust GSEA analysis code, making sure to analyze each of the 3 samples in patients 5 and 6 against only one other at a time.
+•	Start writing results of the above analysis, and make graphs, and send them to Sensei by the end of the week.
 
