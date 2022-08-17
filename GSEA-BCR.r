@@ -4,19 +4,19 @@ library(presto)
 library(msigdbr)
 library(fgsea)
 library(tidyverse)
-
-library(escape) #devtools::install_github("ncborcherding/escape@dev")
-library(dittoSeq) #BiocManager::install("dittoSeq")
-library(SingleCellExperiment)
-
-library(SeuratObject)
-
-library(enrichR)
-
-
-
-library(DOSE)
-library(clusterProfiler)
+# 
+# library(escape) #devtools::install_github("ncborcherding/escape@dev")
+# library(dittoSeq) #BiocManager::install("dittoSeq")
+# library(SingleCellExperiment)
+# 
+# library(SeuratObject)
+# 
+# library(enrichR)
+# 
+# 
+# 
+# library(DOSE)
+# library(clusterProfiler)
 
 BCR <- readRDS("05-BCR-combined.rds")
 
@@ -40,7 +40,6 @@ for (i in levels(factor(BCR@meta.data$patient[BCR$severity != "healthy"]))) {
   
 }
 
-rm(list = setdiff(ls(), c("BCR", "hiclo", "m_df", "fgsea_sets")))
 
 for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels())) {
   #Subsetting the data, based on patient and top V gene:
@@ -139,7 +138,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                             size = 4, raster=TRUE, label=FALSE) + 
              labs(title = paste0(i, " ", levels(as.factor(MNP.genes$group))[1], " vs ",
                                  levels(as.factor(MNP.genes$group))[2])) +
-             theme(axis.text.y = element_text(size = 10),
+             theme(axis.text.y = element_text(size = 9),
                    plot.title = element_text(hjust = 0.5, size = 16))) 
     
     #Plotting pathways:
@@ -393,7 +392,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
     obj <- obj[,obj$severity == "severe" | obj$severity == "moderate"]
     obj$sample <- droplevels(obj$sample)
     
-    alldata <- ScaleData(object = obj[,obj$severity == levels(as.factor(diff.genes$group))[1] | obj$severity == levels(as.factor(diff.genes$group))[2]], 
+    alldata <- ScaleData(object = obj, 
                          features = as.character(unique(top$feature), assay = "RNA"))
     
     DefaultAssay(alldata) <- "RNA"
