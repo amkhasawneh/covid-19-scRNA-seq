@@ -93,6 +93,54 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
       arrange(desc(NES))
     
     
+    # choose top upregulated genes
+    topUpcrit <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[1]) %>%
+      filter(rank > 0) %>% 
+      top_n(50, wt=-padj)
+    
+    topDowncrit <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[1]) %>%
+      filter(rank < 0) %>% 
+      top_n(50, wt=-padj)
+    
+    topUpsev <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[2]) %>%
+      filter(rank > 0) %>% 
+      top_n(60, wt=-padj)
+    
+    topDownsev <- MNP.genes %>%
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[2]) %>%
+      filter(rank < 0) %>%
+      top_n(50, wt=-padj)
+    
+    
+    
+    
+    
+    topPathways <- bind_rows(topUpcrit, topDowncrit, topUpsev, topDownsev)
+    
+    top <- topPathways %>% group_by(group) 
+    
+    # create a scale.data slot for the selected genes in subset data
+    obj <- obj[,obj$severity == "critical" | obj$severity == "severe"]
+    obj$sample <- droplevels(obj$sample)
+    
+    alldata <- ScaleData(object = obj, 
+                         features = as.character(unique(top$feature), assay = "RNA"))
+    
+    DefaultAssay(alldata) <- "RNA"
+    
+    ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
+                             levels(as.factor(MNP.genes$group))[2], ".tiff"), 
+           dpi = 300, width = 15, height = 10, units = "in",
+           plot = DoHeatmap(alldata,
+                            features = unique(top$feature), group.by = "sample",
+                            size = 4, raster=TRUE, label=FALSE) + 
+             labs(title = paste0(i, " ", levels(as.factor(MNP.genes$group))[1], " vs ",
+                                 levels(as.factor(MNP.genes$group))[2])) +
+             theme(axis.text.y = element_text(size = 10),
+                   plot.title = element_text(hjust = 0.5, size = 16))) 
     
     #Plotting pathways:
     fgseaResTidy_c$adjPvalue <- ifelse(fgseaResTidy_c$padj <= 0.05, "significant", "non-significant")
@@ -132,6 +180,10 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
             legend.position='none') 
     ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[2], "-vs-", levels(as.factor(diff.genes$group))[1],  ".tiff"),
            width = 10, height = 10, dpi = 300, units = "in", plot = plot_s)
+    
+    obj <- BCR[,BCR$patient == i & BCR$v_gene == hiclo$v_gene[hiclo$patient == i]]
+    obj$sample <- droplevels(obj$sample)
+    DefaultAssay(obj) <- "RNA"
     
     #Running the "quick" Wilcoxon test to extract DEGs:
     diff.genes <- wilcoxauc(obj, "severity", c("critical", "moderate"),
@@ -175,6 +227,56 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
       as_tibble() %>%
       arrange(desc(NES))
     
+    
+    # choose top upregulated genes
+     topUpcrit <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[1]) %>%
+      filter(rank > 0) %>% 
+      top_n(50, wt=-padj)
+    
+    topDowncrit <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[1]) %>%
+      filter(rank < 0) %>% 
+      top_n(50, wt=-padj)
+    
+    topUpmod <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[2]) %>%
+      filter(rank > 0) %>% 
+      top_n(60, wt=-padj)
+    
+    topDownmod <- MNP.genes %>%
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[2]) %>%
+      filter(rank < 0) %>%
+      top_n(50, wt=-padj)
+    
+   
+    
+    
+    
+    topPathways <- bind_rows(topUpcrit, topDowncrit, topUpmod, topDownmod)
+    
+    top <- topPathways %>% group_by(group) 
+    
+    # create a scale.data slot for the selected genes in subset data
+    obj <- obj[,obj$severity == "critical" | obj$severity == "moderate"]
+    obj$sample <- droplevels(obj$sample)
+    
+    alldata <- ScaleData(object = obj, 
+                         features = as.character(unique(top$feature), assay = "RNA"))
+    
+    DefaultAssay(alldata) <- "RNA"
+    
+    ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
+                             levels(as.factor(MNP.genes$group))[2], ".tiff"), 
+           dpi = 300, width = 15, height = 10, units = "in",
+           plot = DoHeatmap(alldata,
+                            features = unique(top$feature), group.by = "sample",
+                            size = 4, raster=TRUE, label=FALSE) + 
+             labs(title = paste0(i, " ", levels(as.factor(MNP.genes$group))[1], " vs ",
+                                 levels(as.factor(MNP.genes$group))[2])) +
+             theme(axis.text.y = element_text(size = 10),
+                   plot.title = element_text(hjust = 0.5, size = 16)))                  
+    
     #Plotting pathways:
     fgseaResTidy_c$adjPvalue <- ifelse(fgseaResTidy_c$padj <= 0.05, "significant", "non-significant")
     fgseaResTidy_c$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaResTidy_c$pathway)
@@ -213,6 +315,11 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
             legend.position='none') 
     ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[2], "-vs-", levels(as.factor(diff.genes$group))[1], ".tiff"),
            width = 10, height = 10, dpi = 300, units = "in", plot = plot_m)
+    
+    obj <- BCR[,BCR$patient == i & BCR$v_gene == hiclo$v_gene[hiclo$patient == i]]
+    obj$sample <- droplevels(obj$sample)
+    DefaultAssay(obj) <- "RNA"
+   
     
     #Running the "quick" Wilcoxon test to extract DEGs:
     diff.genes <- wilcoxauc(obj, "severity", c("severe", "moderate"),
@@ -254,6 +361,54 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
       as_tibble() %>%
       arrange(desc(NES))
 
+    
+    # choose top upregulated genes
+    topUpmod <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[1]) %>%
+      filter(rank > 0) %>% 
+      top_n(60, wt=-padj)
+    
+    topDownmod <- MNP.genes %>%
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[1]) %>%
+      filter(rank < 0) %>%
+      top_n(50, wt=-padj)
+    
+    topUpsev <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[2]) %>%
+      filter(rank > 0) %>% 
+      top_n(50, wt=-padj)
+    
+    topDownsev <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[2]) %>%
+      filter(rank < 0) %>% 
+      top_n(50, wt=-padj)
+    
+    
+    
+    topPathways <- bind_rows(topUpsev, topDownsev, topUpmod, topDownmod)
+    
+    top <- topPathways %>% group_by(group) 
+    
+    # create a scale.data slot for the selected genes in subset data
+    obj <- obj[,obj$severity == "severe" | obj$severity == "moderate"]
+    obj$sample <- droplevels(obj$sample)
+    
+    alldata <- ScaleData(object = obj[,obj$severity == levels(as.factor(diff.genes$group))[1] | obj$severity == levels(as.factor(diff.genes$group))[2]], 
+                         features = as.character(unique(top$feature), assay = "RNA"))
+    
+    DefaultAssay(alldata) <- "RNA"
+    
+    ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
+                             levels(as.factor(MNP.genes$group))[2], ".tiff"), 
+           dpi = 300, width = 15, height = 10, units = "in",
+           plot = DoHeatmap(alldata,
+                            features = unique(top$feature), group.by = "sample",
+                            size = 4, raster=TRUE, label=FALSE) + 
+             labs(title =  paste0(i, " ", levels(as.factor(MNP.genes$group))[1], " vs ",
+                                  levels(as.factor(MNP.genes$group))[2])) +
+             theme(axis.text.y = element_text(size = 10),
+                   plot.title = element_text(hjust = 0.5, size = 16)))
+    
     #Plotting pathways:
     fgseaResTidy_s$adjPvalue <- ifelse(fgseaResTidy_s$padj <= 0.05, "significant", "non-significant")
     fgseaResTidy_s$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaResTidy_s$pathway)
@@ -331,6 +486,48 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
       as_tibble() %>%
       arrange(desc(NES))
     
+    
+    
+    # choose top upregulated genes
+    topUpcrit <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[1]) %>%
+      filter(rank > 0) %>% 
+      top_n(50, wt=-padj)
+    
+    topDowncrit <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[1]) %>%
+      filter(rank < 0) %>% 
+      top_n(50, wt=-padj)
+    
+    topUpmod <- MNP.genes %>% 
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[2]) %>%
+      filter(rank > 0) %>% 
+      top_n(60, wt=-padj)
+    
+    topDownmod <- MNP.genes %>%
+      dplyr::filter(group == levels(as.factor(MNP.genes$group))[2]) %>%
+      filter(rank < 0) %>%
+      top_n(50, wt=-padj)
+    
+    topPathways <- bind_rows(topUpcrit, topDowncrit, topUpmod, topDownmod)
+    
+    top <- topPathways %>% group_by(group) 
+    
+    # create a scale.data slot for the selected genes in subset data
+    alldata <- ScaleData(object = obj[,obj$severity == levels(as.factor(MNP.genes$group))[1] | obj$severity == levels(as.factor(MNP.genes$group))[2]], 
+                         features = as.character(unique(top$feature), assay = "RNA"))
+    
+    DefaultAssay(alldata) <- "RNA"
+    
+    ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, ".tiff"), dpi = 300,
+           width = 15, height = 10, units = "in",
+           plot = DoHeatmap(alldata,
+                            features = unique(top$feature), group.by = "sample",
+                            size = 4, raster=TRUE, label=FALSE) + 
+             labs(title = i) +
+             theme(axis.text.y = element_text(size = 10),
+                   plot.title = element_text(hjust = 0.5, size = 16)))
+    
     #Plotting pathways:
     fgseaResTidy_c$adjPvalue <- ifelse(fgseaResTidy_c$padj <= 0.05, "significant", "non-significant")
     fgseaResTidy_c$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaResTidy_c$pathway)
@@ -373,35 +570,4 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
   }
   
 }
-
-
-################################FGSEA###########################################
-
-
-
-
-
-################################Normalized Enrichment Score Plots###############
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
