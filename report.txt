@@ -179,4 +179,28 @@ aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])
 Tasks:
 •	Adjust GSEA analysis code, making sure to analyze each of the 3 samples in patients 5 and 6 against only one other at a time.
 •	Start writing results of the above analysis, and make graphs, and send them to Sensei by the end of the week.
+ 
+Exp. 015			                                   		                	  2022.08.17
 
+
+Done things:
+•	Adjusted bar plots for V–J gene usage so that all (except Patient 2) have a range up to 20%, and once again with 50%, using the following:
+
+scale_y_continuous(labels=scales::percent, limits = c(0,0.20))
+	This (20% scale) doesn’t work for Patient 2, of course; it doesn’t show all J genes…
+•	Adjusted GSEA analysis code, making sure to analyze each of the 3 samples in patients 5 and 6 against only one other at a time.
+•	Added code for the heatmaps in GSEA-BCR.r.
+Tasks:
+•	Start writing results of the above analysis, and make graphs, and send them to Sensei by the end of the week.
+ 
+Exp. 016			                                   		                	  2022.08.18
+
+
+Done things:
+•	Adjusted GSEA-BCR.r, removing sub-setting in the last instance of ScaleData() in the loop for Patients 5 and  6.
+•	Added another loop that goes through the 3 V genes indicated by Sensei, and outputs tables.
+•	Adjusted authorship form and resent it to Scientific Reports.
+•	Went to the doctor’s for half the day or so.
+Tasks:
+•	Make tables and GSEA plots using plotEnrichment().
+•	Continue with the PowerPoint file, and send it to Sensei.
