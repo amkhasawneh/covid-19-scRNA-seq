@@ -4,19 +4,7 @@ library(presto)
 library(msigdbr)
 library(fgsea)
 library(tidyverse)
-# 
-# library(escape) #devtools::install_github("ncborcherding/escape@dev")
-# library(dittoSeq) #BiocManager::install("dittoSeq")
-# library(SingleCellExperiment)
-# 
-# library(SeuratObject)
-# 
-# library(enrichR)
-# 
-# 
-# 
-# library(DOSE)
-# library(clusterProfiler)
+
 
 BCR <- readRDS("05-BCR-combined.rds")
 
@@ -615,7 +603,26 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         fgseaRes_s <- fgseaMultilevel(fgsea_sets, stats = ranks_s, nPermSimple = 1000, 
                                       maxSize = 200) %>% arrange(padj)
         
+        #Enrichment plots:
+        ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
+                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+               dpi = 300, width = 15, height = 10, units = "in",
+               plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
+                       ranks_c) + 
+          labs(title = arrange(fgseaRes_c, desc(NES))[1]$pathway) +
+          xlab("Rank") + ylab("Enrichment Score") +
+          theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+          theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
+        ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
+                                 levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+               dpi = 300, width = 15, height = 10, units = "in",
+               plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_s, desc(NES))[1]$pathway]],
+                       ranks_s) + 
+          labs(title = arrange(fgseaRes_s, desc(NES))[1]$pathway) +
+          xlab("Rank") + ylab("Enrichment Score") +
+          theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+          theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
         #Tidying the data:
         fgseaResTidy_c <- fgseaRes_c %>%
@@ -759,7 +766,26 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         fgseaRes_m <- fgseaMultilevel(fgsea_sets, stats = ranks_m, nPermSimple = 1000, 
                                       maxSize = 200) %>% arrange(padj)
         
+        #Enrichment plots:
+        ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
+                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+               dpi = 300, width = 15, height = 10, units = "in",
+               plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
+                                     ranks_c) + 
+                 labs(title = arrange(fgseaRes_c, desc(NES))[1]$pathway) +
+                 xlab("Rank") + ylab("Enrichment Score") +
+                 theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+                 theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
+        ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
+                                 levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+               dpi = 300, width = 15, height = 10, units = "in",
+               plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
+                                     ranks_m) + 
+                 labs(title = arrange(fgseaRes_m, desc(NES))[1]$pathway) +
+                 xlab("Rank") + ylab("Enrichment Score") +
+                 theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+                 theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
         #Tidying the data:
         fgseaResTidy_c <- fgseaRes_c %>%
@@ -902,6 +928,27 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         fgseaRes_m <- fgseaMultilevel(fgsea_sets, stats = ranks_m, nPermSimple = 1000, 
                                       maxSize = 200) %>% arrange(padj)
         
+        #Enrichment plots:
+        ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
+                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+               dpi = 300, width = 15, height = 10, units = "in",
+               plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
+                                     ranks_m) + 
+                 labs(title = arrange(fgseaRes_m, desc(NES))[1]$pathway) +
+                 xlab("Rank") + ylab("Enrichment Score") +
+                 theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+                 theme(plot.title = element_text(hjust = 0.5, size = 16)))
+        
+        ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
+                                 levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+               dpi = 300, width = 15, height = 10, units = "in",
+               plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_s, desc(NES))[1]$pathway]],
+                                     ranks_s) + 
+                 labs(title = arrange(fgseaRes_s, desc(NES))[1]$pathway) +
+                 xlab("Rank") + ylab("Enrichment Score") +
+                 theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+                 theme(plot.title = element_text(hjust = 0.5, size = 16)))
+        
         #Tidying the data:
         fgseaResTidy_s <- fgseaRes_s %>%
           as_tibble() %>%
@@ -917,8 +964,6 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
         write.table(fgseaResTidy_m, file = paste0(i, "-moderate-severe-", v, ".tsv"), sep = "\t", col.names = NA)
-        
-        
         
         # choose top upregulated genes
         topUpmod <- MNP.genes %>% 
@@ -1034,6 +1079,27 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                                       maxSize = 200) %>% arrange(padj)
         fgseaRes_m <- fgseaMultilevel(fgsea_sets, stats = ranks_m, nPermSimple = 1000, 
                                       maxSize = 200) %>% arrange(padj)
+        
+        #Enrichment plots:
+        ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
+                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+               dpi = 300, width = 15, height = 10, units = "in",
+               plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
+                                     ranks_c) + 
+                 labs(title = arrange(fgseaRes_c, desc(NES))[1]$pathway) +
+                 xlab("Rank") + ylab("Enrichment Score") +
+                 theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+                 theme(plot.title = element_text(hjust = 0.5, size = 16)))
+        
+        ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
+                                 levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+               dpi = 300, width = 15, height = 10, units = "in",
+               plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
+                                     ranks_m) + 
+                 labs(title = arrange(fgseaRes_m, desc(NES))[1]$pathway) +
+                 xlab("Rank") + ylab("Enrichment Score") +
+                 theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+                 theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
         #Tidying the data:
         fgseaResTidy_m <- fgseaRes_m %>%
