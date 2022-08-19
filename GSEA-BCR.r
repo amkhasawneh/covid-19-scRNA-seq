@@ -8,8 +8,6 @@ library(tidyverse)
 
 BCR <- readRDS("05-BCR-combined.rds")
 
-################################Gene Info - Wilcoxon############################
-
 
 #Choosing the human Hallmark annotated gene set from the MsigDB:
 m_df <- msigdbr(species = "Homo sapiens", category = "H")
@@ -17,6 +15,10 @@ m_df <- msigdbr(species = "Homo sapiens", category = "H")
 
 #Preparing a list of the gene sets, for fgsea:
 fgsea_sets <- m_df %>% split(x = .$gene_symbol, f = .$gs_name)
+
+################################Gene Info - Wilcoxon############################
+
+
 
 #Printing out the most abundant V-J combinations for each sample:
 hiclo <- NULL
@@ -561,6 +563,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
 
 ################################Using the most commong V genes to all###########
 
+rm(list = setdiff(ls(), c("BCR", "m_df", "fgsea_sets")))
 for (v in c("IGHV3-23", "IGHV4-34", "IGHV4-59")) {
   
 for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels())) {
@@ -606,7 +609,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         #Enrichment plots:
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
                                  levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
-               dpi = 300, width = 15, height = 10, units = "in",
+               dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
                        ranks_c) + 
           labs(title = arrange(fgseaRes_c, desc(NES))[1]$pathway) +
@@ -616,7 +619,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
                                  levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
-               dpi = 300, width = 15, height = 10, units = "in",
+               dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_s, desc(NES))[1]$pathway]],
                        ranks_s) + 
           labs(title = arrange(fgseaRes_s, desc(NES))[1]$pathway) +
@@ -671,6 +674,24 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         topPathways <- bind_rows(topUpcrit, topDowncrit, topUpsev, topDownsev)
         
         top <- topPathways %>% group_by(group) 
+        
+        #Enrichment table graphs:
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], ".tiff"), res = 300,
+             width = 10, height = 5, units = "in")
+        plotGseaTable(fgsea_sets[arrange(fgseaRes_s, desc(NES))[1]$pathway], 
+                      ranks_s, 
+                      fgseaResTidy_s, 
+                      gseaParam = 0.5)
+        dev.off()
+        
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], ".tiff"), res = 300,
+             width = 10, height = 5, units = "in")
+        plotGseaTable(fgsea_sets[arrange(fgseaRes_c, desc(NES))[1]$pathway], 
+                      ranks_c, 
+                      fgseaResTidy_c, 
+                      gseaParam = 0.5) + 
+          theme(text = element_text(size = 15))
+        dev.off()
         
         # create a scale.data slot for the selected genes in subset data
         obj <- obj[,obj$severity == "critical" | obj$severity == "severe"]
@@ -769,7 +790,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         #Enrichment plots:
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
                                  levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
-               dpi = 300, width = 15, height = 10, units = "in",
+               dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
                                      ranks_c) + 
                  labs(title = arrange(fgseaRes_c, desc(NES))[1]$pathway) +
@@ -779,7 +800,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
                                  levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
-               dpi = 300, width = 15, height = 10, units = "in",
+               dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
                                      ranks_m) + 
                  labs(title = arrange(fgseaRes_m, desc(NES))[1]$pathway) +
@@ -832,6 +853,23 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         topPathways <- bind_rows(topUpcrit, topDowncrit, topUpmod, topDownmod)
         
         top <- topPathways %>% group_by(group) 
+        
+        #Enrichment table graphs:
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], ".tiff"), res = 300,
+             width = 10, height = 5, units = "in")
+        plotGseaTable(fgsea_sets[arrange(fgseaRes_m, desc(NES))[1]$pathway], 
+                      ranks_m, 
+                      fgseaResTidy_m, 
+                      gseaParam = 0.5)
+        dev.off()
+        
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2],  ".tiff"), res = 300,
+             width = 10, height = 5, units = "in")
+        plotGseaTable(fgsea_sets[arrange(fgseaRes_c, desc(NES))[1]$pathway], 
+                      ranks_c, 
+                      fgseaResTidy_c, 
+                      gseaParam = 0.5)
+        dev.off()
         
         # create a scale.data slot for the selected genes in subset data
         obj <- obj[,obj$severity == "critical" | obj$severity == "moderate"]
@@ -931,7 +969,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         #Enrichment plots:
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
                                  levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
-               dpi = 300, width = 15, height = 10, units = "in",
+               dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
                                      ranks_m) + 
                  labs(title = arrange(fgseaRes_m, desc(NES))[1]$pathway) +
@@ -941,7 +979,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
                                  levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
-               dpi = 300, width = 15, height = 10, units = "in",
+               dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_s, desc(NES))[1]$pathway]],
                                      ranks_s) + 
                  labs(title = arrange(fgseaRes_s, desc(NES))[1]$pathway) +
@@ -991,6 +1029,23 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         topPathways <- bind_rows(topUpsev, topDownsev, topUpmod, topDownmod)
         
         top <- topPathways %>% group_by(group) 
+        
+        #Enrichment table graphs:
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], ".tiff"), res = 300,
+             width = 10, height = 5, units = "in")
+        plotGseaTable(fgsea_sets[arrange(fgseaRes_m, desc(NES))[1]$pathway], 
+                      ranks_m, 
+                      fgseaResTidy_m, 
+                      gseaParam = 0.5)
+        dev.off()
+        
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], ".tiff"), res = 300,
+             width = 10, height = 5, units = "in")
+        plotGseaTable(fgsea_sets[arrange(fgseaRes_s, desc(NES))[1]$pathway], 
+                      ranks_s, 
+                      fgseaResTidy_s, 
+                      gseaParam = 0.5)
+        dev.off()
         
         # create a scale.data slot for the selected genes in subset data
         obj <- obj[,obj$severity == "severe" | obj$severity == "moderate"]
@@ -1083,7 +1138,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         #Enrichment plots:
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
                                  levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
-               dpi = 300, width = 15, height = 10, units = "in",
+               dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
                                      ranks_c) + 
                  labs(title = arrange(fgseaRes_c, desc(NES))[1]$pathway) +
@@ -1093,7 +1148,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
                                  levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
-               dpi = 300, width = 15, height = 10, units = "in",
+               dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
                                      ranks_m) + 
                  labs(title = arrange(fgseaRes_m, desc(NES))[1]$pathway) +
@@ -1142,6 +1197,24 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         topPathways <- bind_rows(topUpcrit, topDowncrit, topUpmod, topDownmod)
         
         top <- topPathways %>% group_by(group) 
+        
+        #Enrichment table graphs:
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], ".tiff"), res = 300,
+             width = 10, height = 5, units = "in")
+        plotGseaTable(fgsea_sets[arrange(fgseaRes_m, desc(NES))[1]$pathway], 
+                      ranks_m, 
+                      fgseaResTidy_m, 
+                      gseaParam = 0.5)
+        dev.off()
+        
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], ".tiff"), res = 300,
+             width = 10, height = 5, units = "in")
+        plotGseaTable(fgsea_sets[arrange(fgseaRes_c, desc(NES))[1]$pathway], 
+                      ranks_c, 
+                      fgseaResTidy_c, 
+                      gseaParam = 0.5)
+        dev.off()
+        
         
         # create a scale.data slot for the selected genes in subset data
         alldata <- ScaleData(object = obj[,obj$severity == levels(as.factor(MNP.genes$group))[1] | obj$severity == levels(as.factor(MNP.genes$group))[2]], 
@@ -1239,11 +1312,32 @@ fgseaRes_c <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000,
 fgseaRes_m <- fgseaMultilevel(fgsea_sets, stats = ranks_m, nPermSimple = 1000, 
                               maxSize = 200) %>% arrange(padj)
 
+#Enrichment plots:
+ggsave(filename = paste0("graphs/enrichment-plot-all-", levels(as.factor(MNP.genes$group))[1], "-",
+                         levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+       dpi = 300, width = 15, height = 10, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
+                             ranks_c) + 
+         labs(title = arrange(fgseaRes_c, desc(NES))[1]$pathway) + #Suggested title improvement: 
+         xlab("Rank") + ylab("Enrichment Score") +                 #arrange(fgseaRes_c, desc(NES))[1]$pathway %>% sub(pattern = "HALLMARK_", replacement = "") %>% sub(pattern = "_", replacement = " ")
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = paste0("graphs/enrichment-plot-all-", levels(as.factor(MNP.genes$group))[2], "-",
+                         levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+       dpi = 300, width = 15, height = 10, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
+                             ranks_m) + 
+         labs(title = arrange(fgseaRes_m, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
 #Tidying the data:
 fgseaResTidy_m <- fgseaRes_m %>%
   as_tibble() %>%
   arrange(desc(NES)) %>%
-  mutate(leadingEdge = vapply(fgseaResTidy_m$leadingEdge, paste, collapse = ", ", character(1L)))
+  mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
 
 write.table(fgseaResTidy_m, file = "all-b-cells-moderate-vs-critical.tsv", sep = "\t", col.names = NA)
 
@@ -1251,7 +1345,7 @@ write.table(fgseaResTidy_m, file = "all-b-cells-moderate-vs-critical.tsv", sep =
 fgseaResTidy_c <- fgseaRes_c %>%
   as_tibble() %>%
   arrange(desc(NES)) %>%
-  mutate(leadingEdge = vapply(fgseaResTidy_m$leadingEdge, paste, collapse = ", ", character(1L)))
+  mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
 
 write.table(fgseaResTidy_c, file = "all-b-cells-critical-vs-moderate.tsv", sep = "\t", col.names = NA)
 
@@ -1280,6 +1374,17 @@ topDownmod <- MNP.genes %>%
 topPathways <- bind_rows(topUpcrit, topDowncrit, topUpmod, topDownmod)
 
 top <- topPathways %>% group_by(group) 
+
+#Enrichment table graphs:
+plotGseaTable(fgsea_sets[arrange(fgseaRes_m, desc(NES))[1]$pathway], 
+              ranks_m, 
+              fgseaResTidy_m, 
+              gseaParam = 0.5)
+
+plotGseaTable(fgsea_sets[arrange(fgseaRes_c, desc(NES))[1]$pathway], 
+              ranks_c, 
+              fgseaResTidy_c, 
+              gseaParam = 0.5)
 
 # create a scale.data slot for the selected genes in subset data
 alldata <- ScaleData(object = BCR, 
