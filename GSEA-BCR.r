@@ -563,12 +563,11 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
 
 ################################Using the most commong V genes to all###########
 
-rm(list = setdiff(ls(), c("BCR", "m_df", "fgsea_sets")))
-for (v in c("IGHV3-23", "IGHV4-34", "IGHV4-59")) {
-  
+rm(list = setdiff(ls(), c("BCR", "m_df", "fgsea_sets", "hiclo")))
+
 for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels())) {
   #Subsetting the data, based on patient and top V gene:
-  obj <- BCR[,BCR$patient == i & BCR$v_gene == v]
+  obj <- BCR[,BCR$patient == i & BCR$v_gene == hiclo$v_gene[hiclo$patient == i]]
   obj$sample <- droplevels(obj$sample)
   DefaultAssay(obj) <- "RNA"
   try(
@@ -608,7 +607,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         #Enrichment plots:
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
-                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
                        ranks_c) + 
@@ -618,7 +617,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
-                                 levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[1], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_s, desc(NES))[1]$pathway]],
                        ranks_s) + 
@@ -633,7 +632,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           arrange(desc(NES) ) %>%
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
-        write.table(fgseaResTidy_c, file = paste0(i, "-critical-severe-", v, ".tsv"), sep = "\t", col.names = NA)
+        write.table(fgseaResTidy_c, file = paste0(i, "-critical-severe-", hiclo$v_gene[hiclo$patient == i], "-top.tsv"), sep = "\t", col.names = NA)
         
         
         
@@ -642,7 +641,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           arrange(desc(NES)) %>%
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
-        write.table(fgseaResTidy_s, file = paste0(i, "-severe-critical-", v, ".tsv"), sep = "\t", col.names = NA)
+        write.table(fgseaResTidy_s, file = paste0(i, "-severe-critical-", hiclo$v_gene[hiclo$patient == i], "-top.tsv"), sep = "\t", col.names = NA)
         
                 
         
@@ -676,7 +675,8 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         top <- topPathways %>% group_by(group) 
         
         #Enrichment table graphs:
-        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], ".tiff"), res = 300,
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", hiclo$v_gene[hiclo$patient == i],
+                               "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], "-top.tiff"), res = 300,
              width = 10, height = 5, units = "in")
         plotGseaTable(fgsea_sets[arrange(fgseaRes_s, desc(NES))[1]$pathway], 
                       ranks_s, 
@@ -684,7 +684,8 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                       gseaParam = 0.5)
         dev.off()
         
-        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], ".tiff"), res = 300,
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", hiclo$v_gene[hiclo$patient == i],
+                               "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], "-top.tiff"), res = 300,
              width = 10, height = 5, units = "in")
         plotGseaTable(fgsea_sets[arrange(fgseaRes_c, desc(NES))[1]$pathway], 
                       ranks_c, 
@@ -703,7 +704,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         DefaultAssay(alldata) <- "RNA"
         
         ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
-                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 15, height = 10, units = "in",
                plot = DoHeatmap(alldata,
                                 features = unique(top$feature), group.by = "sample",
@@ -732,7 +733,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                 legend.key.width = unit(0.25, 'cm'), 
                 legend.title = element_text(size=10),
                 legend.text = element_text(size=10)) 
-        ggsave(filename = paste0("graphs/gsea-",   i, "-", levels(as.factor(diff.genes$group))[1], "-vs-", levels(as.factor(diff.genes$group))[2], "-", v,  ".tiff"),
+        ggsave(filename = paste0("graphs/gsea-",   i, "-", levels(as.factor(diff.genes$group))[1], "-vs-", levels(as.factor(diff.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i],  "-top.tiff"),
                width = 10, height = 10, dpi = 300, units = "in", plot = plot_c)
         
         fgseaResTidy_s$adjPvalue <- ifelse(fgseaResTidy_s$padj <= 0.05, "significant", "non-significant")
@@ -749,10 +750,10 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                 plot.title = element_text(hjust = 0.5, size = 14),
                 axis.title = element_text(size = 10),
                 legend.position='none') 
-        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[2], "-vs-", levels(as.factor(diff.genes$group))[1],  ".tiff"),
+        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[2], "-vs-", levels(as.factor(diff.genes$group))[1], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"),
                width = 10, height = 10, dpi = 300, units = "in", plot = plot_s)
         
-        obj <- BCR[,BCR$patient == i & BCR$v_gene == v]
+        obj <- BCR[,BCR$patient == i & BCR$v_gene == hiclo$v_gene[hiclo$patient == i]]
         obj$sample <- droplevels(obj$sample)
         DefaultAssay(obj) <- "RNA"
         
@@ -789,7 +790,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         #Enrichment plots:
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
-                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
                                      ranks_c) + 
@@ -799,7 +800,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                  theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
-                                 levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[1], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
                                      ranks_m) + 
@@ -814,7 +815,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           arrange(desc(NES)) %>%
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
-        write.table(fgseaResTidy_c, file = paste0(i, "-critical-moderate-", v, ".tsv"), sep = "\t", col.names = NA)
+        write.table(fgseaResTidy_c, file = paste0(i, "-critical-moderate-", hiclo$v_gene[hiclo$patient == i], "-top.tsv"), sep = "\t", col.names = NA)
         
                 
         fgseaResTidy_m <- fgseaRes_m %>%
@@ -822,7 +823,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           arrange(desc(NES)) %>%
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
-        write.table(fgseaResTidy_m, file = paste0(i, "-moderate-critical-", v, ".tsv"), sep = "\t", col.names = NA)
+        write.table(fgseaResTidy_m, file = paste0(i, "-moderate-critical-", hiclo$v_gene[hiclo$patient == i], "-top.tsv"), sep = "\t", col.names = NA)
         
         
         # choose top upregulated genes
@@ -855,7 +856,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         top <- topPathways %>% group_by(group) 
         
         #Enrichment table graphs:
-        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], ".tiff"), res = 300,
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", hiclo$v_gene[hiclo$patient == i], "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], "-top.tiff"), res = 300,
              width = 10, height = 5, units = "in")
         plotGseaTable(fgsea_sets[arrange(fgseaRes_m, desc(NES))[1]$pathway], 
                       ranks_m, 
@@ -863,7 +864,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                       gseaParam = 0.5)
         dev.off()
         
-        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2],  ".tiff"), res = 300,
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", hiclo$v_gene[hiclo$patient == i], "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2],  "-top.tiff"), res = 300,
              width = 10, height = 5, units = "in")
         plotGseaTable(fgsea_sets[arrange(fgseaRes_c, desc(NES))[1]$pathway], 
                       ranks_c, 
@@ -881,7 +882,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         DefaultAssay(alldata) <- "RNA"
         
         ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
-                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 15, height = 10, units = "in",
                plot = DoHeatmap(alldata,
                                 features = unique(top$feature), group.by = "sample",
@@ -910,7 +911,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                 legend.key.width = unit(0.25, 'cm'), 
                 legend.title = element_text(size=10),
                 legend.text = element_text(size=10)) 
-        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[1], "-vs-", levels(as.factor(diff.genes$group))[2], "-", v, ".tiff"),
+        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[1], "-vs-", levels(as.factor(diff.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"),
                width = 10, height = 10, dpi = 300, units = "in", plot = plot_c)
         
         fgseaResTidy_m$adjPvalue <- ifelse(fgseaResTidy_m$padj <= 0.05, "significant", "non-significant")
@@ -927,10 +928,10 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                 plot.title = element_text(hjust = 0.5, size = 14),
                 axis.title = element_text(size = 10),
                 legend.position='none') 
-        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[2], "-vs-", levels(as.factor(diff.genes$group))[1], "-", v, ".tiff"),
+        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[2], "-vs-", levels(as.factor(diff.genes$group))[1], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"),
                width = 10, height = 10, dpi = 300, units = "in", plot = plot_m)
         
-        obj <- BCR[,BCR$patient == i & BCR$v_gene == v]
+        obj <- BCR[,BCR$patient == i & BCR$v_gene == hiclo$v_gene[hiclo$patient == i]]
         obj$sample <- droplevels(obj$sample)
         DefaultAssay(obj) <- "RNA"
         
@@ -968,7 +969,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         #Enrichment plots:
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
-                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
                                      ranks_m) + 
@@ -978,7 +979,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                  theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
-                                 levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[1], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_s, desc(NES))[1]$pathway]],
                                      ranks_s) + 
@@ -993,7 +994,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           arrange(desc(NES)) %>%
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
-        write.table(fgseaResTidy_s, file = paste0(i, "-severe-moderate-", v, ".tsv"), sep = "\t", col.names = NA)
+        write.table(fgseaResTidy_s, file = paste0(i, "-severe-moderate-", hiclo$v_gene[hiclo$patient == i], "-top.tsv"), sep = "\t", col.names = NA)
         
                 
         fgseaResTidy_m <- fgseaRes_m %>%
@@ -1001,7 +1002,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           arrange(desc(NES)) %>%
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
-        write.table(fgseaResTidy_m, file = paste0(i, "-moderate-severe-", v, ".tsv"), sep = "\t", col.names = NA)
+        write.table(fgseaResTidy_m, file = paste0(i, "-moderate-severe-", hiclo$v_gene[hiclo$patient == i], "-top.tsv"), sep = "\t", col.names = NA)
         
         # choose top upregulated genes
         topUpmod <- MNP.genes %>% 
@@ -1031,7 +1032,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         top <- topPathways %>% group_by(group) 
         
         #Enrichment table graphs:
-        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], ".tiff"), res = 300,
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", hiclo$v_gene[hiclo$patient == i], "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], "-top.tiff"), res = 300,
              width = 10, height = 5, units = "in")
         plotGseaTable(fgsea_sets[arrange(fgseaRes_m, desc(NES))[1]$pathway], 
                       ranks_m, 
@@ -1039,7 +1040,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                       gseaParam = 0.5)
         dev.off()
         
-        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], ".tiff"), res = 300,
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", hiclo$v_gene[hiclo$patient == i], "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], "-top.tiff"), res = 300,
              width = 10, height = 5, units = "in")
         plotGseaTable(fgsea_sets[arrange(fgseaRes_s, desc(NES))[1]$pathway], 
                       ranks_s, 
@@ -1057,7 +1058,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         DefaultAssay(alldata) <- "RNA"
         
         ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
-                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 15, height = 10, units = "in",
                plot = DoHeatmap(alldata,
                                 features = unique(top$feature), group.by = "sample",
@@ -1082,7 +1083,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                 plot.title = element_text(hjust = 0.5, size = 14),
                 axis.title = element_text(size = 10),
                 legend.position='none') 
-        ggsave(filename = paste0("graphs/gsea-",  i, "-", "severe-vs-moderate", "-", v, ".tiff"),
+        ggsave(filename = paste0("graphs/gsea-",  i, "-", "severe-vs-moderate", "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"),
                width = 10, height = 10, dpi = 300, units = "in", plot = plot_s)
         
         fgseaResTidy_m$adjPvalue <- ifelse(fgseaResTidy_m$padj <= 0.05, "significant", "non-significant")
@@ -1099,7 +1100,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                 plot.title = element_text(hjust = 0.5, size = 14),
                 axis.title = element_text(size = 10),
                 legend.position='none') 
-        ggsave(filename = paste0("graphs/gsea-",  i, "-", "moderate-vs-severe", "-", v, ".tiff"),
+        ggsave(filename = paste0("graphs/gsea-",  i, "-", "moderate-vs-severe", "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"),
                width = 10, height = 10, dpi = 300, units = "in", plot = plot_m)
         
         
@@ -1137,7 +1138,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         #Enrichment plots:
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[1], "-",
-                                 levels(as.factor(MNP.genes$group))[2], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c, desc(NES))[1]$pathway]],
                                      ranks_c) + 
@@ -1147,7 +1148,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                  theme(plot.title = element_text(hjust = 0.5, size = 16)))
         
         ggsave(filename = paste0("graphs/enrichment-plot-", i, "-", levels(as.factor(MNP.genes$group))[2], "-",
-                                 levels(as.factor(MNP.genes$group))[1], "-", v, ".tiff"), 
+                                 levels(as.factor(MNP.genes$group))[1], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), 
                dpi = 300, width = 10, height = 5, units = "in",
                plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m, desc(NES))[1]$pathway]],
                                      ranks_m) + 
@@ -1162,7 +1163,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           arrange(desc(NES)) %>%
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
-        write.table(fgseaResTidy_m, file = paste0(i, "-", levels(as.factor(diff.genes$group))[2], "-critical-", v, ".tsv"), sep = "\t", col.names = NA)
+        write.table(fgseaResTidy_m, file = paste0(i, "-", levels(as.factor(diff.genes$group))[2], "-critical-", hiclo$v_gene[hiclo$patient == i], "-top.tsv"), sep = "\t", col.names = NA)
         
                 
         fgseaResTidy_c <- fgseaRes_c %>%
@@ -1170,7 +1171,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
           arrange(desc(NES)) %>%
           mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L)))
         
-        write.table(fgseaResTidy_c, file = paste0(i, "-critical-",  v, levels(as.factor(diff.genes$group))[2],".tsv"), sep = "\t", col.names = NA)
+        write.table(fgseaResTidy_c, file = paste0(i, "-critical-",  hiclo$v_gene[hiclo$patient == i], levels(as.factor(diff.genes$group))[2],"-top.tsv"), sep = "\t", col.names = NA)
         
                 
         # choose top upregulated genes
@@ -1199,7 +1200,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         top <- topPathways %>% group_by(group) 
         
         #Enrichment table graphs:
-        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], ".tiff"), res = 300,
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", hiclo$v_gene[hiclo$patient == i], "-", levels(as.factor(MNP.genes$group))[2], "-", levels(as.factor(MNP.genes$group))[1], "-top.tiff"), res = 300,
              width = 10, height = 5, units = "in")
         plotGseaTable(fgsea_sets[arrange(fgseaRes_m, desc(NES))[1]$pathway], 
                       ranks_m, 
@@ -1207,7 +1208,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                       gseaParam = 0.5)
         dev.off()
         
-        tiff(filename = paste0("graphs/gsea-table-", i, "-", v, "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], ".tiff"), res = 300,
+        tiff(filename = paste0("graphs/gsea-table-", i, "-", hiclo$v_gene[hiclo$patient == i], "-", levels(as.factor(MNP.genes$group))[1], "-", levels(as.factor(MNP.genes$group))[2], "-top.tiff"), res = 300,
              width = 10, height = 5, units = "in")
         plotGseaTable(fgsea_sets[arrange(fgseaRes_c, desc(NES))[1]$pathway], 
                       ranks_c, 
@@ -1222,7 +1223,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
         
         DefaultAssay(alldata) <- "RNA"
         
-        ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, "-", v, ".tiff"), dpi = 300,
+        ggsave(filename = paste0("graphs/wilcox-rrho-hm-", i, "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"), dpi = 300,
                width = 15, height = 10, units = "in",
                plot = DoHeatmap(alldata,
                                 features = unique(top$feature), group.by = "sample",
@@ -1250,7 +1251,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                 legend.key.width = unit(0.25, 'cm'), 
                 legend.title = element_text(size=10),
                 legend.text = element_text(size=10)) 
-        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[1], "-", v, ".tiff"),
+        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[1], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"),
                width = 10, height = 10, dpi = 300, units = "in", plot = plot_c)
         
         fgseaResTidy_m$adjPvalue <- ifelse(fgseaResTidy_m$padj <= 0.05, "significant", "non-significant")
@@ -1267,7 +1268,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
                 plot.title = element_text(hjust = 0.5, size = 14),
                 axis.title = element_text(size = 10),
                 legend.position='none') 
-        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[2], "-", v, ".tiff"),
+        ggsave(filename = paste0("graphs/gsea-",  i, "-", levels(as.factor(diff.genes$group))[2], "-", hiclo$v_gene[hiclo$patient == i], "-top.tiff"),
                width = 10, height = 10, dpi = 300, units = "in", plot = plot_m)
         
       }
@@ -1277,7 +1278,7 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]) %>% droplevels()
   )
   
 }
-}
+
 
 
 ################################For all B cells#################################
