@@ -9,7 +9,6 @@ library(enrichR)
 library(presto)
 library(msigdbr)
 library(fgsea)
-library(tidyverse)
 library(DOSE)
 library(clusterProfiler)
 
@@ -2074,4 +2073,21 @@ barplot(height = -log10(enriched[[1]]$Adjusted.P.value[10:1]), names.arg = enric
 abline(v = c(-log10(0.05)), lty = 2)
 abline(v = 0, lty = 1)
 
+
+
+################################ISGs Heatmaps###################################
+
+ISGs <- read.csv("manuscript/ISGs_GeneSets_SU.csv")
+ISGs <- union(ISGs$ISGs_0034340_response_to_type1_interferon, 
+              c(ISGs$ISGs_0034341_response_to_interferon_gamma, ISGs$ISGs_0035455_response_to_interferon_alpha, ISGs$ISGs_geneset_227))
+ISGs <- ISGs$ISGs_0035455_response_to_interferon_alpha
+ISGs <- ISGs$ISGs_0034341_response_to_interferon_gamma
+ISGs <- ISGs$ISGs_0034340_response_to_type1_interferon
+ISGs <- ISGs$ISGs_geneset_227
+
+ISGs <- ISGs[!grepl(ISGs, pattern = "LOC") & !grepl(ISGs, pattern = "XENTR") & !grepl(ISGs, pattern = "GSON")]
+ISGs <- ISGs[ISGs != ""]
+obj <- ScaleData(BCR[,BCR$patient == "Patient 1"], features = ISGs, assay = "RNA")
+DefaultAssay(obj) <- "RNA"
+DoHeatmap(obj, features = ISGs, group.by = "severity")
 
