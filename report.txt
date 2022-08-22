@@ -204,3 +204,24 @@ Done things:
 Tasks:
 •	Make tables and GSEA plots using plotEnrichment().
 •	Continue with the PowerPoint file, and send it to Sensei.
+
+
+
+ 
+Exp. 017			                                   		                	  2022.08.19
+
+
+Done things:
+•	Added code for fgsea tables.
+•	Adjusted PowerPoint file accordingly, and sent it to Sensei.
+ 
+Exp. 018			                                   		                	  2022.08.22
+
+
+Done things:
+•	Adjusted GSEA-BCR to include top V gene for each patient.
+•	Extracted ISGs from the Excel file Sensei sent us.
+Tasks:
+•	Use ISGs for comparison to make heatmaps and other graphs; compare critical and moderate in pt1-4, and again in pt5-6; preferably have different cell types in horizontal layers, as in this paper. This requires ComplexHeatmap!
+•	Extract ISGs from the Excel file Sensei sent us.
+•	Try Change-O for lineage tree analysis.
