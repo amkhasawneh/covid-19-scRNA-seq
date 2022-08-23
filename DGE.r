@@ -2087,7 +2087,41 @@ ISGs <- ISGs$ISGs_geneset_227
 
 ISGs <- ISGs[!grepl(ISGs, pattern = "LOC") & !grepl(ISGs, pattern = "XENTR") & !grepl(ISGs, pattern = "GSON")]
 ISGs <- ISGs[ISGs != ""]
-obj <- ScaleData(BCR[,BCR$patient == "Patient 1"], features = ISGs, assay = "RNA")
+
+
+obj <- BCR[,BCR$patient != "Patient 5" & BCR$patient != "Patient 6" & BCR$severity != "healthy"] %>% droplevels()
+obj$zeverity <- "critical"
+obj$zeverity[obj$severity == "mild" | obj$severity == "moderate"] <- "moderate"
 DefaultAssay(obj) <- "RNA"
-DoHeatmap(obj, features = ISGs, group.by = "severity")
+obj <- obj[ISGs,]
+DefaultAssay(obj) <- 'RNA'
+obj <- NormalizeData(obj)
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+
+
+#Changing the data to "pseudo-bulk":
+obj.tmp <- ScaleData(obj, features = diff.genes$feature)
+mat <- AverageExpression(obj.tmp, features = diff.genes$feature, slot = 'scale.data')
+mat1 <- mat$RNA
+  
+obj.tmp@meta.data %>% 
+  group_by(sample, zeverity) %>% count() -> thing
+
+meta.data <- data.frame(t(mat1), thing)
+
+meta.data <- meta.data[,c(colnames(meta.data)[colnames(meta.data) %in% rownames(obj.tmp@assays$RNA@scale.data)], "sample", "azimuthNames", "zeverity")]
+
+expr.cols <- colorRamp2(c(-2, 0, 2), c("purple", "black", "yellow"))
+
+col.anno <- HeatmapAnnotation(cells = factor(meta.data$azimuthNames), severity = factor(meta.data$zeverity),
+                              col = list("B intermediate" = "#00b8ff", "B memory" = "#000000", "B naive" = "#9fcb92", "Plasmablast" = "#fe7726"))
+                              
+
+Heatmap(t(meta.data[,-c(171:173)]), show_column_names = F, show_row_dend = F, show_column_dend = F, col = cols, 
+        top_annotation = col.anno)
+
 
