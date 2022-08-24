@@ -11,6 +11,8 @@ library(msigdbr)
 library(fgsea)
 library(DOSE)
 library(clusterProfiler)
+library(circlize)
+library(ComplexHeatmap)
 
 BCR <- readRDS("05-BCR-combined.rds")
 BCR <- BCR[,BCR$patient != "Control 4"]
@@ -2076,28 +2078,23 @@ abline(v = 0, lty = 1)
 
 
 ################################ISGs Heatmaps###################################
-
+#####First, for Patients 1-4:
 #Importing interferon-stimulated gene set:
 ISGs <- read.csv("manuscript/ISGs_GeneSets_SU.csv")
 ISGs <- union(ISGs$ISGs_0034340_response_to_type1_interferon, 
               c(ISGs$ISGs_0034341_response_to_interferon_gamma, ISGs$ISGs_0035455_response_to_interferon_alpha, ISGs$ISGs_geneset_227))
 
-#Subsetting gene set:
-ISGs <- ISGs$ISGs_0034341_response_to_interferon_gamma
+#Cleaning gene set:
 ISGs <- ISGs[!grepl(ISGs, pattern = "LOC") & !grepl(ISGs, pattern = "XENTR") & !grepl(ISGs, pattern = "GSON")]
 ISGs <- ISGs[ISGs != ""]
 
-obj <- BCR[,BCR$patient != "Patient 5" & BCR$patient != "Patient 6" & BCR$severity != "healthy"] %>% droplevels()
+obj <- BCR[,BCR$patient != "Patient 5" & BCR$patient != "Patient 6" & BCR$severity != "healthy"]
+obj$sample <- droplevels(obj$sample)
 obj$zeverity <- "critical"
 obj$zeverity[obj$severity == "mild" | obj$severity == "moderate"] <- "moderate"
 DefaultAssay(obj) <- "RNA"
 obj <- obj[ISGs,]
 obj <- NormalizeData(obj)
-
-#Running the "quick" Wilcoxon test to extract DEGs:
-diff.genes <- wilcoxauc(obj, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
-  subset(padj < 0.05) %>% arrange(padj) %>% top_n(n = 20, wt = logFC)
-
 
 #Changing the data to "pseudo-bulk", using ISG set:
 obj.tmp <- ScaleData(obj, features = ISGs)
@@ -2115,10 +2112,8 @@ meta.data <- data.frame(t(avg.exp.rna), thing)
 meta.data <- meta.data[,c(colnames(meta.data)[colnames(meta.data) %in% rownames(obj.tmp@assays$RNA@scale.data)], "sample", "azimuthNames", "zeverity")]
 
 #Preparing aesthetic parameters:
-library(circlize)
-library(ComplexHeatmap)
 expr.cols <- colorRamp2(c(-2, 0, 2), c("purple", "black", "yellow"))
-col.anno <- HeatmapAnnotation(Severity = factor(meta.data.B.int$zeverity), 
+col.anno <- HeatmapAnnotation(Severity = factor(meta.data.B.int$zeverity), show_annotation_name = F,   
                               col = list(Severity = c("critical" = "red", "moderate" = "blue")))
 column_labels <- c("moderate272_Patient1" = "Pt1", "critical293_Patient1" = "Pt1",
                    "moderate303_Patient2" = "Pt2", "critical308_Patient2" = "Pt2",
@@ -2129,7 +2124,7 @@ column_labels <- c("moderate272_Patient1" = "Pt1", "critical293_Patient1" = "Pt1
 meta.data.B.int <- meta.data[meta.data$azimuthNames == "B intermediate",]
 rownames(meta.data.B.int) <- meta.data.B.int$sample
 hm.b.int <- Heatmap(t(meta.data.B.int[,1:30]), column_split = meta.data.B.int$zeverity, name = "Expression",
-                    column_labels = column_labels, row_title = "B intermediate",
+                    column_labels = column_labels, row_title = "B intermediate", column_title = " ", 
                     col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 5), 
                     show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
 
@@ -2158,12 +2153,222 @@ hm.plasm <- Heatmap(t(meta.data.Plasm[,1:30]), column_split = meta.data.B.int$ze
 #Adding all heatmaps to one, and saving it:
 hm.list <- hm.b.int %v% hm.b.mem %v% hm.b.nai %v% hm.plasm
 
-tiff("./graphs/hm-critical-moderate-cells-isg.tiff",
+tiff("./graphs/hm-critical-moderate-cells-isgs-pt1-4.tiff",
         res = 300, width = 4, height = 8, units = "in")
 draw(hm.list)
 dev.off()
 
 
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+#Changing the data to "pseudo-bulk", using DEG set:
+obj.tmp <- ScaleData(obj, features = diff.genes$feature)
+avg.exp.mat <- AverageExpression(obj.tmp, features = diff.genes$feature, group.by = c("sample", "azimuthNames"),  slot = 'scale.data')
+avg.exp.rna <- avg.exp.mat$RNA
+
+#Extracting some meta data for "clustering" the heatmap:
+obj.tmp@meta.data %>% 
+  group_by(sample, zeverity, azimuthNames) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data <- data.frame(t(avg.exp.rna), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data <- meta.data[,c(colnames(meta.data)[colnames(meta.data) %in% rownames(obj.tmp@assays$RNA@scale.data)], "sample", "azimuthNames", "zeverity")]
+
+#Preparing aesthetic parameters:
+expr.cols <- colorRamp2(c(-2, 0, 2), c("purple", "black", "yellow"))
+col.anno <- HeatmapAnnotation(Severity = factor(meta.data.B.int$zeverity), show_annotation_name = F,   
+                              col = list(Severity = c("critical" = "red", "moderate" = "blue")))
+column_labels <- c("moderate272_Patient1" = "Pt1", "critical293_Patient1" = "Pt1",
+                   "moderate303_Patient2" = "Pt2", "critical308_Patient2" = "Pt2",
+                   "mild186_Patient3" = "Pt3", "critical213_Patient3" = "Pt3",
+                   "mild227_Patient4" = "Pt4", "critical238_Patient4" = "Pt4")
+
+#Preparing separate matrices for each cell type:
+meta.data.B.int <- meta.data[meta.data$azimuthNames == "B intermediate",]
+rownames(meta.data.B.int) <- meta.data.B.int$sample
+hm.b.int <- Heatmap(t(meta.data.B.int[,1:30]), column_split = meta.data.B.int$zeverity, name = "Expression",
+                    column_labels = column_labels, row_title = "B intermediate", column_title = " ", 
+                    col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 5), 
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+
+meta.data.B.mem <- meta.data[meta.data$azimuthNames == "B memory",]
+rownames(meta.data.B.mem) <- meta.data.B.mem$sample
+hm.b.mem <- Heatmap(t(meta.data.B.mem[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "B memory",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+meta.data.B.nai <- meta.data[meta.data$azimuthNames == "B naive",]
+rownames(meta.data.B.nai) <- meta.data.B.nai$sample
+hm.b.nai <- Heatmap(t(meta.data.B.nai[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "B naive",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+meta.data.Plasm <- meta.data[meta.data$azimuthNames == "Plasmablast",]
+rownames(meta.data.Plasm) <- meta.data.Plasm$sample
+hm.plasm <- Heatmap(t(meta.data.Plasm[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "Plasmablasts",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+#Adding all heatmaps to one, and saving it:
+hm.list <- hm.b.int %v% hm.b.mem %v% hm.b.nai %v% hm.plasm
+
+tiff("./graphs/hm-critical-moderate-cells-deg-pt1-4.tiff",
+     res = 300, width = 4, height = 8, units = "in")
+draw(hm.list)
+dev.off()
+
+#####Then, for Patients 5 and 6:
+#Importing interferon-stimulated gene set:
+ISGs <- read.csv("manuscript/ISGs_GeneSets_SU.csv")
+ISGs <- union(ISGs$ISGs_0034340_response_to_type1_interferon, 
+              c(ISGs$ISGs_0034341_response_to_interferon_gamma, ISGs$ISGs_0035455_response_to_interferon_alpha, ISGs$ISGs_geneset_227))
+
+#Cleaning gene set:
+ISGs <- ISGs[!grepl(ISGs, pattern = "LOC") & !grepl(ISGs, pattern = "XENTR") & !grepl(ISGs, pattern = "GSON")]
+ISGs <- ISGs[ISGs != ""]
+
+obj <- BCR[,(BCR$patient == "Patient 5" | BCR$patient == "Patient 6") & BCR$severity != "severe"]
+obj$sample <- droplevels(obj$sample)
+obj$zeverity <- "critical"
+obj$zeverity[obj$severity == "mild" | obj$severity == "moderate"] <- "moderate"
+DefaultAssay(obj) <- "RNA"
+obj <- obj[ISGs,]
+obj <- NormalizeData(obj)
+
+#Changing the data to "pseudo-bulk", using ISG set:
+obj.tmp <- ScaleData(obj, features = ISGs)
+avg.exp.mat <- AverageExpression(obj.tmp, features = ISGs, group.by = c("sample", "azimuthNames"),  slot = 'scale.data')
+avg.exp.rna <- avg.exp.mat$RNA
+  
+#Extracting some meta data for "clustering" the heatmap:
+obj.tmp@meta.data %>% 
+  group_by(sample, zeverity, azimuthNames) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data <- data.frame(t(avg.exp.rna), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data <- meta.data[,c(colnames(meta.data)[colnames(meta.data) %in% rownames(obj.tmp@assays$RNA@scale.data)], "sample", "azimuthNames", "zeverity")]
+
+#Preparing aesthetic parameters:
+expr.cols <- colorRamp2(c(-2, 0, 2), c("purple", "black", "yellow"))
+col.anno <- HeatmapAnnotation(Severity = factor(meta.data.B.int$zeverity), show_annotation_name = F,   
+                              col = list(Severity = c("critical" = "red", "moderate" = "blue")))
+column_labels <- c("critical119_Patient5" = "Pt5", "moderate138_Patient5" = "Pt5",
+                   "critical120_Patient6" = "Pt6", "moderate124_Patient6" = "Pt6")
+
+#Preparing separate matrices for each cell type:
+meta.data.B.int <- meta.data[meta.data$azimuthNames == "B intermediate",]
+rownames(meta.data.B.int) <- meta.data.B.int$sample
+hm.b.int <- Heatmap(t(meta.data.B.int[,1:30]), column_split = meta.data.B.int$zeverity, name = "Expression",
+                    column_labels = column_labels, row_title = "B intermediate", column_title = " ", 
+                    col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 5), 
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+
+meta.data.B.mem <- meta.data[meta.data$azimuthNames == "B memory",]
+rownames(meta.data.B.mem) <- meta.data.B.mem$sample
+hm.b.mem <- Heatmap(t(meta.data.B.mem[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "B memory",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+meta.data.B.nai <- meta.data[meta.data$azimuthNames == "B naive",]
+rownames(meta.data.B.nai) <- meta.data.B.nai$sample
+hm.b.nai <- Heatmap(t(meta.data.B.nai[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "B naive",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+meta.data.Plasm <- meta.data[meta.data$azimuthNames == "Plasmablast",]
+rownames(meta.data.Plasm) <- meta.data.Plasm$sample
+hm.plasm <- Heatmap(t(meta.data.Plasm[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "Plasmablasts",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+#Adding all heatmaps to one, and saving it:
+hm.list <- hm.b.int %v% hm.b.mem %v% hm.b.nai %v% hm.plasm
+
+tiff("./graphs/hm-critical-moderate-cells-isgs-pt5-6.tiff",
+        res = 300, width = 4, height = 8, units = "in")
+draw(hm.list)
+dev.off()
+
+
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+#Changing the data to "pseudo-bulk", using DEG set:
+obj.tmp <- ScaleData(obj, features = diff.genes$feature)
+avg.exp.mat <- AverageExpression(obj.tmp, features = diff.genes$feature, group.by = c("sample", "azimuthNames"),  slot = 'scale.data')
+avg.exp.rna <- avg.exp.mat$RNA
+
+#Extracting some meta data for "clustering" the heatmap:
+obj.tmp@meta.data %>% 
+  group_by(sample, zeverity, azimuthNames) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data <- data.frame(t(avg.exp.rna), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data <- meta.data[,c(colnames(meta.data)[colnames(meta.data) %in% rownames(obj.tmp@assays$RNA@scale.data)], "sample", "azimuthNames", "zeverity")]
+
+#Preparing aesthetic parameters:
+expr.cols <- colorRamp2(c(-2, 0, 2), c("purple", "black", "yellow"))
+col.anno <- HeatmapAnnotation(Severity = factor(meta.data.B.int$zeverity), show_annotation_name = F,   
+                              col = list(Severity = c("critical" = "red", "moderate" = "blue")))
+column_labels <- c("critical119_Patient5" = "Pt5", "moderate138_Patient5" = "Pt5",
+                   "critical120_Patient6" = "Pt6", "moderate124_Patient6" = "Pt6")
+
+#Preparing separate matrices for each cell type:
+meta.data.B.int <- meta.data[meta.data$azimuthNames == "B intermediate",]
+rownames(meta.data.B.int) <- meta.data.B.int$sample
+hm.b.int <- Heatmap(t(meta.data.B.int[,1:30]), column_split = meta.data.B.int$zeverity, name = "Expression",
+                    column_labels = column_labels, row_title = "B intermediate", column_title = " ", 
+                    col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 5), 
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+
+meta.data.B.mem <- meta.data[meta.data$azimuthNames == "B memory",]
+rownames(meta.data.B.mem) <- meta.data.B.mem$sample
+hm.b.mem <- Heatmap(t(meta.data.B.mem[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "B memory",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+meta.data.B.nai <- meta.data[meta.data$azimuthNames == "B naive",]
+rownames(meta.data.B.nai) <- meta.data.B.nai$sample
+hm.b.nai <- Heatmap(t(meta.data.B.nai[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "B naive",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+meta.data.Plasm <- meta.data[meta.data$azimuthNames == "Plasmablast",]
+rownames(meta.data.Plasm) <- meta.data.Plasm$sample
+hm.plasm <- Heatmap(t(meta.data.Plasm[,1:30]), column_split = meta.data.B.int$zeverity,
+                    column_labels = column_labels, row_title = "Plasmablasts",
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+
+#Adding all heatmaps to one, and saving it:
+hm.list <- hm.b.int %v% hm.b.mem %v% hm.b.nai %v% hm.plasm
+
+tiff("./graphs/hm-critical-moderate-cells-deg-pt5-6.tiff",
+     res = 300, width = 4, height = 8, units = "in")
+draw(hm.list)
+dev.off()
 
 
 
