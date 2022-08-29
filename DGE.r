@@ -2613,11 +2613,11 @@ column_labels <- c("healthy1_control1" = "HC1", "healthy2_control2" = "HC2", "he
 #Preparing separate matrices for each cell type:
 hm.b <- Heatmap(t(meta.data.B[,colnames(meta.data.B) %in% diff.genes$feature]), 
                 column_split = meta.data.B$illness, name = "Expression", 
-                column_order = c("healthy1_control1", "healthy2_control2", "healthy3_control3",
-                                 "moderate272_Patient1", "moderate303_Patient2", "mild186_Patient3", "mild227_Patient4",
-                                 "moderate138_Patient5", "moderate124_Patient6", "severe123_Patient5", "severe122_Patient6",
-                                 "critical293_Patient1", "critical308_Patient2", "critical213_Patient3", "critical238_Patient4",
-                                 "critical119_Patient5", "critical120_Patient6"),
+                # column_order = c("healthy1_control1", "healthy2_control2", "healthy3_control3",
+                #                  "moderate272_Patient1", "moderate303_Patient2", "mild186_Patient3", "mild227_Patient4",
+                #                  "moderate138_Patient5", "moderate124_Patient6", "severe123_Patient5", "severe122_Patient6",
+                #                  "critical293_Patient1", "critical308_Patient2", "critical213_Patient3", "critical238_Patient4",
+                #                  "critical119_Patient5", "critical120_Patient6"),                        #If we need a certain column order
                 column_labels = column_labels, row_title = "B cells", column_title = " ",  
                 col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 5), 
                 show_row_dend = F, show_column_dend = F, cluster_columns = F)
