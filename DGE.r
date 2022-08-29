@@ -2771,143 +2771,536 @@ dev.off()
 #####Dividing B cells:
 #Importing interferon-stimulated gene set:
 ISGs <- read.csv("manuscript/ISGs_GeneSets_SU.csv")
-ISGs <- union(ISGs$ISGs_0034340_response_to_type1_interferon, 
-              c(ISGs$ISGs_0034341_response_to_interferon_gamma, ISGs$ISGs_0035455_response_to_interferon_alpha, ISGs$ISGs_geneset_227))
+ISGs <- ISGs$ISGs_geneset_227
 
 #Cleaning gene set:
 ISGs <- ISGs[!grepl(ISGs, pattern = "LOC") & !grepl(ISGs, pattern = "XENTR") & !grepl(ISGs, pattern = "GSON")]
 ISGs <- ISGs[ISGs != ""]
 
-obj <- BCR[,(BCR$patient == "Patient 5" | BCR$patient == "Patient 6") & BCR$severity != "severe"]
-obj$sample <- droplevels(obj$sample)
-obj$zeverity <- "critical"
-obj$zeverity[obj$severity == "mild" | obj$severity == "moderate"] <- "moderate"
-DefaultAssay(obj) <- "RNA"
-obj <- obj[ISGs,]
-obj <- NormalizeData(obj)
+
+obj.b <- BCR[,(BCR$patient != "Patient 5" & BCR$patient != "Patient 6") & BCR$severity != "healthy"]
+obj.b$sample <- droplevels(obj.b$sample)
+obj.b$zeverity <- "critical"
+obj.b$zeverity[obj.b$severity == "mild" | obj.b$severity == "moderate"] <- "moderate"
+DefaultAssay(obj.b) <- "RNA"
+
+#For B intermediate:
+obj.b.int <- obj.b[,obj.b$azimuthNames == "B intermediate"]
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj.b.int, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(desc(abs(logFC)))
+
+# rank genes using rrho algorithm
+MNP.genes_B.int <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                # sort genes by decreasing rank
+#head(n = 10)
+
+# choose top upregulated genes
+topUp_B_mod.int <- MNP.genes_B.int %>% 
+  dplyr::filter(group == c('moderate')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>% 
+  top_n(50, wt=-padj)
+
+topUp_B_crit.int <- MNP.genes_B.int %>% 
+  dplyr::filter(group == c('critical')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>%
+  top_n(50, wt=-padj)
+
+
+## moderate vs critical
+topPathways_all.int <- bind_rows(topUp_B_mod.int, topUp_B_crit.int)
+
+
+#Subsetting to only DEGs that are DEGs:
+obj.b.int <- obj.b.int[ISGs[ISGs %in% topPathways_all$feature],]
+obj.b.int <- NormalizeData(obj.b.int)
 
 #Changing the data to "pseudo-bulk", using ISG set:
-obj.tmp <- ScaleData(obj, features = ISGs)
-avg.exp.mat <- AverageExpression(obj.tmp, features = ISGs, group.by = c("sample", "azimuthNames"),  slot = 'scale.data')
-avg.exp.rna <- avg.exp.mat$RNA
+obj.b.tmp <- ScaleData(obj.b.int)
+avg.exp.mat.b.int <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
+avg.exp.rna.b.int <- avg.exp.mat.b.int$RNA
 
 #Extracting some meta data for "clustering" the heatmap:
-obj.tmp@meta.data %>% 
-  group_by(sample, zeverity, azimuthNames) %>% count() -> thing
+obj.b.tmp@meta.data %>% 
+  group_by(sample, zeverity) %>% count() -> thing
 
 #Adding average/bulk expression data to meta data:
-meta.data <- data.frame(t(avg.exp.rna), thing)
+meta.data.B.int <- data.frame(t(avg.exp.rna.b.int), thing)
 
 #Keeping only genes that exist in the scaled data in the Seurat object:
-meta.data <- meta.data[,c(colnames(meta.data)[colnames(meta.data) %in% rownames(obj.tmp@assays$RNA@scale.data)], "sample", "azimuthNames", "zeverity")]
+meta.data.B.int <- meta.data.B.int[,c(colnames(meta.data.B.int)[colnames(meta.data.B.int) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "zeverity")]
+
 
 #Preparing aesthetic parameters:
 expr.cols <- colorRamp2(c(-2, 0, 2), c("purple", "black", "yellow"))
-col.anno <- HeatmapAnnotation(Severity = factor(meta.data.B.int$zeverity), show_annotation_name = F,   
+col.anno <- HeatmapAnnotation(Severity = meta.data.B.int$zeverity, show_annotation_name = F,   
                               col = list(Severity = c("critical" = "red", "moderate" = "blue")))
-column_labels <- c("critical119_Patient5" = "Pt5", "moderate138_Patient5" = "Pt5",
-                   "critical120_Patient6" = "Pt6", "moderate124_Patient6" = "Pt6")
+column_labels <- c("moderate272_Patient1" = "Pt1", "critical293_Patient1" = "Pt1",
+                   "moderate303_Patient2" = "Pt2", "critical308_Patient2" = "Pt2",
+                   "mild186_Patient3" = "Pt3", "critical213_Patient3" = "Pt3",
+                   "mild227_Patient4" = "Pt4", "critical238_Patient4" = "Pt4")
 
 #Preparing separate matrices for each cell type:
-meta.data.B.int <- meta.data[meta.data$azimuthNames == "B intermediate",]
 rownames(meta.data.B.int) <- meta.data.B.int$sample
-hm.b.int <- Heatmap(t(meta.data.B.int[,1:30]), column_split = meta.data.B.int$zeverity, name = "Expression",
-                    column_labels = column_labels, row_title = "B intermediate", column_title = " ", 
-                    col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 5), 
-                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+meta.data.B.int$zeverity <- factor(meta.data.B.int$zeverity, levels = c("moderate", "critical"))
+hm.b.int <- Heatmap(t(meta.data.B.int[,colnames(meta.data.B.int) %in% diff.genes$feature]), 
+                column_split = meta.data.B.int$zeverity, name = "Expression", 
+                column_labels = column_labels, row_title = "B intermediate", column_title = " ",  
+                col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 7), 
+                show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
 
-meta.data.B.mem <- meta.data[meta.data$azimuthNames == "B memory",]
+#For B memory:
+obj.b.mem <- obj.b[,obj.b$azimuthNames == "B memory"]
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj.b.mem, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(desc(abs(logFC)))
+
+# rank genes using rrho algorithm
+MNP.genes_B.mem <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                # sort genes by decreasing rank
+#head(n = 10)
+
+# choose top upregulated genes
+topUp_B_mod.mem <- MNP.genes_B.mem %>% 
+  dplyr::filter(group == c('moderate')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>% 
+  top_n(50, wt=-padj)
+
+topUp_B_crit.mem <- MNP.genes_B.mem %>% 
+  dplyr::filter(group == c('critical')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>%
+  top_n(50, wt=-padj)
+
+
+## moderate vs critical
+topPathways_all.mem <- bind_rows(topUp_B_mod.mem, topUp_B_crit.mem)
+
+
+#Subsetting to only DEGs that are DEGs:
+obj.b.mem <- obj.b.mem[ISGs[ISGs %in% topPathways_all$feature],]
+obj.b.mem  <- NormalizeData(obj.b.mem)
+
+#Changing the data to "pseudo-bulk", using ISG set:
+obj.b.tmp <- ScaleData(obj.b.mem)
+avg.exp.mat.b.mem <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
+avg.exp.rna.b.mem <- avg.exp.mat.b.mem$RNA
+
+#Extracting some meta data for "clustering" the heatmap:
+obj.b.tmp@meta.data %>% 
+  group_by(sample, zeverity) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data.B.mem <- data.frame(t(avg.exp.rna.b.mem), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data.B.mem <- meta.data.B.mem[,c(colnames(meta.data.B.mem)[colnames(meta.data.B.mem) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "zeverity")]
+
+
+
 rownames(meta.data.B.mem) <- meta.data.B.mem$sample
-hm.b.mem <- Heatmap(t(meta.data.B.mem[,1:30]), column_split = meta.data.B.int$zeverity,
+hm.b.mem <- Heatmap(t(meta.data.B.mem[,colnames(meta.data.B.mem) %in% diff.genes$feature]),
+                    column_split = meta.data.B.mem$zeverity,
                     column_labels = column_labels, row_title = "B memory",
-                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
-                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 7),
+                    show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
-meta.data.B.nai <- meta.data[meta.data$azimuthNames == "B naive",]
+
+#####For B naive:
+
+obj.b.nai <- obj.b[,obj.b$azimuthNames == "B naive"]
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj.b.nai, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(desc(abs(logFC)))
+
+# rank genes using rrho algorithm
+MNP.genes_B.nai <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                # sort genes by decreasing rank
+#head(n = 10)
+
+# choose top upregulated genes
+topUp_B_mod.nai <- MNP.genes_B.nai %>% 
+  dplyr::filter(group == c('moderate')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>% 
+  top_n(50, wt=-padj)
+
+topUp_B_crit.nai <- MNP.genes_B.nai %>% 
+  dplyr::filter(group == c('critical')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>%
+  top_n(50, wt=-padj)
+
+
+## moderate vs critical
+topPathways_all.nai <- bind_rows(topUp_B_mod.nai, topUp_B_crit.nai)
+
+
+#Subsetting to only DEGs that are DEGs:
+obj.b.nai <- obj.b.nai[ISGs[ISGs %in% topPathways_all$feature],]
+obj.b.nai  <- NormalizeData(obj.b.nai)
+
+#Changing the data to "pseudo-bulk", using ISG set:
+obj.b.tmp <- ScaleData(obj.b.nai)
+avg.exp.mat.b.nai <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
+avg.exp.rna.b.nai <- avg.exp.mat.b.nai$RNA
+
+#Extracting some meta data for "clustering" the heatmap:
+obj.b.tmp@meta.data %>% 
+  group_by(sample, zeverity) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data.B.nai <- data.frame(t(avg.exp.rna.b.nai), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data.B.nai <- meta.data.B.nai[,c(colnames(meta.data.B.nai)[colnames(meta.data.B.nai) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "zeverity")]
+
+
+
 rownames(meta.data.B.nai) <- meta.data.B.nai$sample
-hm.b.nai <- Heatmap(t(meta.data.B.nai[,1:30]), column_split = meta.data.B.int$zeverity,
+hm.b.nai <- Heatmap(t(meta.data.B.nai[,colnames(meta.data.B.mem) %in% diff.genes$feature]), 
+                    column_split = meta.data.B.nai$zeverity,
                     column_labels = column_labels, row_title = "B naive",
-                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
-                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 7),
+                    show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
-meta.data.Plasm <- meta.data[meta.data$azimuthNames == "Plasmablast",]
-rownames(meta.data.Plasm) <- meta.data.Plasm$sample
-hm.plasm <- Heatmap(t(meta.data.Plasm[,1:30]), column_split = meta.data.B.int$zeverity,
+#####For plasmablasts:
+
+obj.b.pla <- obj.b[,obj.b$azimuthNames == "Plasmablast"]
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj.b.pla, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(desc(abs(logFC)))
+
+# rank genes using rrho algorithm
+MNP.genes_B.pla <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                # sort genes by decreasing rank
+#head(n = 10)
+
+# choose top upregulated genes
+topUp_B_mod.pla <- MNP.genes_B.pla %>% 
+  dplyr::filter(group == c('moderate')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>% 
+  top_n(50, wt=-padj)
+
+topUp_B_crit.pla <- MNP.genes_B.pla %>% 
+  dplyr::filter(group == c('critical')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>%
+  top_n(50, wt=-padj)
+
+
+## moderate vs critical
+topPathways_all.pla <- bind_rows(topUp_B_mod.pla, topUp_B_crit.pla)
+
+
+#Subsetting to only DEGs that are DEGs:
+obj.b.pla <- obj.b.pla[ISGs[ISGs %in% topPathways_all$feature],]
+obj.b.pla <- NormalizeData(obj.b.pla)
+
+#Changing the data to "pseudo-bulk", using ISG set:
+obj.b.tmp <- ScaleData(obj.b.pla)
+avg.exp.mat.b.pla <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
+avg.exp.rna.b.pla <- avg.exp.mat.b.pla$RNA
+
+#Extracting some meta data for "clustering" the heatmap:
+obj.b.tmp@meta.data %>% 
+  group_by(sample, zeverity) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data.B.pla <- data.frame(t(avg.exp.rna.b.pla), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data.B.pla <- meta.data.B.pla[,c(colnames(meta.data.B.pla)[colnames(meta.data.B.pla) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "zeverity")]
+
+
+rownames(meta.data.B.pla) <- meta.data.B.pla$sample
+hm.plasm <- Heatmap(t(meta.data.B.pla[,colnames(meta.data.B.mem) %in% diff.genes$feature]), column_split = meta.data.B.pla$zeverity,
                     column_labels = column_labels, row_title = "Plasmablasts",
-                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
-                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 7),
+                    show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
 #Adding all heatmaps to one, and saving it:
 hm.list <- hm.b.int %v% hm.b.mem %v% hm.b.nai %v% hm.plasm
 
-tiff("./graphs/hm-critical-moderate-cells-isgs-pt5-6.tiff",
+tiff("./graphs/hm-critical-moderate-b-cells-isg-in-deg-pt1-4.tiff",
      res = 300, width = 4, height = 8, units = "in")
 draw(hm.list)
 dev.off()
 
 
+#####For Patients 5 and 6
+
+
+obj.b <- BCR[,(BCR$patient == "Patient 5" | BCR$patient == "Patient 6") & BCR$severity != "severe"]
+obj.b$sample <- droplevels(obj.b$sample)
+DefaultAssay(obj.b) <- "RNA"
+
+
+
+#For B intermediate:
+obj.b.int <- obj.b[,obj.b$azimuthNames == "B intermediate"]
 
 #Running the "quick" Wilcoxon test to extract DEGs:
-diff.genes <- wilcoxauc(obj, group_by = "zeverity", seurat_assay='RNA', assay = "data") %>%
-  subset(padj < 0.05) %>% arrange(padj)
+diff.genes <- wilcoxauc(obj.b.int, group_by = "severity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(desc(abs(logFC)))
 
-#Changing the data to "pseudo-bulk", using DEG set:
-obj.tmp <- ScaleData(obj, features = diff.genes$feature)
-avg.exp.mat <- AverageExpression(obj.tmp, features = diff.genes$feature, group.by = c("sample", "azimuthNames"),  slot = 'scale.data')
-avg.exp.rna <- avg.exp.mat$RNA
+# rank genes using rrho algorithm
+MNP.genes_B.int <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                # sort genes by decreasing rank
+
+# choose top upregulated genes
+topUp_B_mod.int <- MNP.genes_B.int %>% 
+  dplyr::filter(group == c('moderate')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>% 
+  top_n(50, wt=-padj)
+
+topUp_B_crit.int <- MNP.genes_B.int %>% 
+  dplyr::filter(group == c('critical')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>%
+  top_n(50, wt=-padj)
+
+
+## moderate vs critical
+topPathways_all.int <- bind_rows(topUp_B_mod.int, topUp_B_crit.int)
+
+
+#Subsetting to only DEGs that are DEGs:
+obj.b.int <- obj.b.int[ISGs[ISGs %in% topPathways_all$feature],]
+obj.b.int <- NormalizeData(obj.b.int)
+
+#Changing the data to "pseudo-bulk", using ISG set:
+obj.b.tmp <- ScaleData(obj.b.int)
+avg.exp.mat.b.int <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
+avg.exp.rna.b.int <- avg.exp.mat.b.int$RNA
 
 #Extracting some meta data for "clustering" the heatmap:
-obj.tmp@meta.data %>% 
-  group_by(sample, zeverity, azimuthNames) %>% count() -> thing
+obj.b.tmp@meta.data %>% 
+  group_by(sample, severity) %>% count() -> thing
 
 #Adding average/bulk expression data to meta data:
-meta.data <- data.frame(t(avg.exp.rna), thing)
+meta.data.B.int <- data.frame(t(avg.exp.rna.b.int), thing)
 
 #Keeping only genes that exist in the scaled data in the Seurat object:
-meta.data <- meta.data[,c(colnames(meta.data)[colnames(meta.data) %in% rownames(obj.tmp@assays$RNA@scale.data)], "sample", "azimuthNames", "zeverity")]
+meta.data.B.int <- meta.data.B.int[,c(colnames(meta.data.B.int)[colnames(meta.data.B.int) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "severity")]
+
 
 #Preparing aesthetic parameters:
 expr.cols <- colorRamp2(c(-2, 0, 2), c("purple", "black", "yellow"))
-col.anno <- HeatmapAnnotation(Severity = factor(meta.data.B.int$zeverity), show_annotation_name = F,   
+col.anno <- HeatmapAnnotation(Severity = factor(meta.data.B.int$severity), show_annotation_name = F,   
                               col = list(Severity = c("critical" = "red", "moderate" = "blue")))
 column_labels <- c("critical119_Patient5" = "Pt5", "moderate138_Patient5" = "Pt5",
                    "critical120_Patient6" = "Pt6", "moderate124_Patient6" = "Pt6")
 
 #Preparing separate matrices for each cell type:
-meta.data.B.int <- meta.data[meta.data$azimuthNames == "B intermediate",]
 rownames(meta.data.B.int) <- meta.data.B.int$sample
-hm.b.int <- Heatmap(t(meta.data.B.int[,1:30]), column_split = meta.data.B.int$zeverity, name = "Expression",
-                    column_labels = column_labels, row_title = "B intermediate", column_title = " ", 
-                    col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 5), 
-                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+meta.data.B.int$severity <- factor(meta.data.B.int$severity, levels = c("moderate", "critical"))
+hm.b.int <- Heatmap(t(meta.data.B.int[,colnames(meta.data.B.int) %in% diff.genes$feature]), 
+                    column_split = meta.data.B.int$severity, name = "Expression", 
+                    column_labels = column_labels, row_title = "B intermediate", column_title = " ",  
+                    col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 7), 
+                    show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
 
-meta.data.B.mem <- meta.data[meta.data$azimuthNames == "B memory",]
+#For B memory:
+obj.b.mem <- obj.b[,obj.b$azimuthNames == "B memory"]
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj.b.mem, group_by = "severity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(desc(abs(logFC)))
+
+# rank genes using rrho algorithm
+MNP.genes_B.mem <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                # sort genes by decreasing rank
+
+# choose top upregulated genes
+topUp_B_mod.mem <- MNP.genes_B.mem %>% 
+  dplyr::filter(group == c('moderate')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>% 
+  top_n(50, wt=-padj)
+
+topUp_B_crit.mem <- MNP.genes_B.mem %>% 
+  dplyr::filter(group == c('critical')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>%
+  top_n(50, wt=-padj)
+
+
+## moderate vs critical
+topPathways_all.mem <- bind_rows(topUp_B_mod.mem, topUp_B_crit.mem)
+
+
+#Subsetting to only DEGs that are DEGs:
+obj.b.mem <- obj.b.mem[ISGs[ISGs %in% topPathways_all.mem$feature],]
+obj.b.mem  <- NormalizeData(obj.b.mem)
+
+#Changing the data to "pseudo-bulk", using ISG set:
+obj.b.tmp <- ScaleData(obj.b.mem, features = ISGs[ISGs %in% topPathways_all.mem$feature])
+avg.exp.mat.b.mem <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
+avg.exp.rna.b.mem <- avg.exp.mat.b.mem$RNA
+
+#Extracting some meta data for "clustering" the heatmap:
+obj.b.tmp@meta.data %>% 
+  group_by(sample, severity) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data.B.mem <- data.frame(t(avg.exp.rna.b.mem[rownames(avg.exp.rna.b.mem) %in% diff.genes,]), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data.B.mem <- meta.data.B.mem[,c(colnames(meta.data.B.mem)[colnames(meta.data.B.mem) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "severity")]
+
+
+
 rownames(meta.data.B.mem) <- meta.data.B.mem$sample
-hm.b.mem <- Heatmap(t(meta.data.B.mem[,1:30]), column_split = meta.data.B.int$zeverity,
+hm.b.mem <- Heatmap(t(meta.data.B.mem[,colnames(meta.data.B.mem) %in% diff.genes$feature]),
+                    column_split = meta.data.B.mem$severity,
                     column_labels = column_labels, row_title = "B memory",
-                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
-                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 7),
+                    show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
-meta.data.B.nai <- meta.data[meta.data$azimuthNames == "B naive",]
+
+#####For B naive:
+
+obj.b.nai <- obj.b[,obj.b$azimuthNames == "B naive"]
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj.b.nai, group_by = "severity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(desc(abs(logFC)))
+
+# rank genes using rrho algorithm
+MNP.genes_B.nai <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                # sort genes by decreasing rank
+#head(n = 10)
+
+# choose top upregulated genes
+topUp_B_mod.nai <- MNP.genes_B.nai %>% 
+  dplyr::filter(group == c('moderate')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>% 
+  top_n(50, wt=-padj)
+
+topUp_B_crit.nai <- MNP.genes_B.nai %>% 
+  dplyr::filter(group == c('critical')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>%
+  top_n(50, wt=-padj)
+
+
+## moderate vs critical
+topPathways_all.nai <- bind_rows(topUp_B_mod.nai, topUp_B_crit.nai)
+
+
+#Subsetting to only DEGs that are DEGs:
+obj.b.nai <- obj.b.nai[ISGs[ISGs %in% topPathways_all$feature],]
+obj.b.nai  <- NormalizeData(obj.b.nai)
+
+#Changing the data to "pseudo-bulk", using ISG set:
+obj.b.tmp <- ScaleData(obj.b.nai)
+avg.exp.mat.b.nai <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
+avg.exp.rna.b.nai <- avg.exp.mat.b.nai$RNA
+
+#Extracting some meta data for "clustering" the heatmap:
+obj.b.tmp@meta.data %>% 
+  group_by(sample, severity) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data.B.nai <- data.frame(t(avg.exp.rna.b.nai[rownames(avg.exp.rna.b.nai) %in% diff.genes,]), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data.B.nai <- meta.data.B.nai[,c(colnames(meta.data.B.nai)[colnames(meta.data.B.nai) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "severity")]
+
+
+#STAT1
 rownames(meta.data.B.nai) <- meta.data.B.nai$sample
-hm.b.nai <- Heatmap(t(meta.data.B.nai[,1:30]), column_split = meta.data.B.int$zeverity,
+hm.b.nai <- Heatmap(t(meta.data.B.nai[,colnames(meta.data.B.nai) %in% diff.genes$feature]), 
+                    column_split = meta.data.B.nai$severity, 
                     column_labels = column_labels, row_title = "B naive",
-                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
-                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 7),
+                    show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
-meta.data.Plasm <- meta.data[meta.data$azimuthNames == "Plasmablast",]
-rownames(meta.data.Plasm) <- meta.data.Plasm$sample
-hm.plasm <- Heatmap(t(meta.data.Plasm[,1:30]), column_split = meta.data.B.int$zeverity,
+#####For plasmablasts:
+
+obj.b.pla <- obj.b[,obj.b$azimuthNames == "Plasmablast"]
+
+#Running the "quick" Wilcoxon test to extract DEGs:
+diff.genes <- wilcoxauc(obj.b.pla, group_by = "severity", seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(desc(abs(logFC)))
+
+# rank genes using rrho algorithm
+MNP.genes_B.pla <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                # sort genes by decreasing rank
+
+# choose top upregulated genes
+topUp_B_mod.pla <- MNP.genes_B.pla %>% 
+  dplyr::filter(group == c('moderate')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>% 
+  top_n(50, wt=-padj)
+
+topUp_B_crit.pla <- MNP.genes_B.pla %>% 
+  dplyr::filter(group == c('critical')) %>%
+  filter(rank > 0) %>% 
+  subset(padj < 0.05) %>%
+  top_n(50, wt=-padj)
+
+
+## moderate vs critical
+topPathways_all.pla <- bind_rows(topUp_B_mod.pla, topUp_B_crit.pla)
+
+
+#Subsetting to only DEGs that are DEGs:
+obj.b.pla <- obj.b.pla[ISGs[ISGs %in% topPathways_all$feature],]
+obj.b.pla <- NormalizeData(obj.b.pla)
+
+#Changing the data to "pseudo-bulk", using ISG set:
+obj.b.tmp <- ScaleData(obj.b.pla)
+avg.exp.mat.b.pla <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
+avg.exp.rna.b.pla <- avg.exp.mat.b.pla$RNA
+
+#Extracting some meta data for "clustering" the heatmap:
+obj.b.tmp@meta.data %>% 
+  group_by(sample, severity) %>% count() -> thing
+
+#Adding average/bulk expression data to meta data:
+meta.data.B.pla <- data.frame(t(avg.exp.rna.b.pla), thing)
+
+#Keeping only genes that exist in the scaled data in the Seurat object:
+meta.data.B.pla <- meta.data.B.pla[,c(colnames(meta.data.B.pla)[colnames(meta.data.B.pla) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "severity")]
+
+
+rownames(meta.data.B.pla) <- meta.data.B.pla$sample
+hm.plasm <- Heatmap(t(meta.data.B.pla[,colnames(meta.data.B.pla) %in% diff.genes$feature]), column_split = meta.data.B.pla$severity,
                     column_labels = column_labels, row_title = "Plasmablasts",
-                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
-                    show_row_dend = F, show_column_dend = F, cluster_rows = F, cluster_columns = F)
+                    col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 7),
+                    show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
-#Adding all heatmaps to one, and saving it:
-hm.list <- hm.b.int %v% hm.b.mem %v% hm.b.nai %v% hm.plasm
 
-tiff("./graphs/hm-critical-moderate-cells-deg-pt5-6.tiff",
+
+
+
+#Adding all heatmaps to one, and saving it: hm.b.mem %v% hm.b.nai %v%
+hm.list <- hm.b.int %v% hm.plasm
+
+tiff("./graphs/hm-critical-moderate-b-cells-isg-in-deg-pt5-6.tiff",
      res = 300, width = 4, height = 8, units = "in")
 draw(hm.list)
 dev.off()
