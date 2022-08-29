@@ -2315,7 +2315,7 @@ dev.off()
 #Importing interferon-stimulated gene set:
 ISGs <- read.csv("manuscript/ISGs_GeneSets_SU.csv")
 ISGs <- ISGs$ISGs_geneset_227
-ISGs
+ISGs <- gsub(x = ISGs, pattern = "HLA-", replacement = "HLA.")
 
 #Cleaning gene set:
 ISGs <- ISGs[!grepl(ISGs, pattern = "LOC") & !grepl(ISGs, pattern = "XENTR") & !grepl(ISGs, pattern = "GSON")]
@@ -2581,44 +2581,52 @@ obj.b <- NormalizeData(obj.b)
 
 #Changing the data to "pseudo-bulk", using ISG set:
 obj.b.tmp <- ScaleData(obj.b)
-avg.exp.mat.b <- AverageExpression(obj.b.tmp, group.by = "patient", slot = 'scale.data')
+avg.exp.mat.b <- AverageExpression(obj.b.tmp, group.by = "sample", slot = 'scale.data')
 avg.exp.rna.b <- avg.exp.mat.b$RNA
 
 #Extracting some meta data for "clustering" the heatmap:
 obj.b.tmp@meta.data %>% 
-  group_by(patient, illness) %>% count() -> thing
+  group_by(sample, severity, illness) %>% count() -> thing
 
 #Adding average/bulk expression data to meta data:
 meta.data.B <- data.frame(t(avg.exp.rna.b), thing)
 
 #Keeping only genes that exist in the scaled data in the Seurat object:
-meta.data.B <- meta.data.B[,c(colnames(meta.data.B)[colnames(meta.data.B) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "patient", "illness")]
+meta.data.B <- meta.data.B[,c(colnames(meta.data.B)[colnames(meta.data.B) %in% rownames(obj.b.tmp@assays$RNA@scale.data)], "sample", "severity", "illness")]
 
 
 #Preparing aesthetic parameters:
 expr.cols <- colorRamp2(c(-2, 0, 2), c("purple", "black", "yellow"))
-col.anno <- HeatmapAnnotation(Status = factor(meta.data.B$illness), show_annotation_name = F,   
-                              col = list(Status = c("control" = "green", "covid" = "#00FFFF")))
+col.anno <- HeatmapAnnotation(Status = factor(meta.data.B$illness), Severity = factor(meta.data.B$severity), show_annotation_name = F,   
+                              col = list(Status = c("control" = "green", "covid" = "#00FFFF"),
+                                         Severity = c("mild" = "#000080", "moderate" = "blue",
+                                                      "severe" = "pink", "critical" = "red", "healthy" = "#FAFDF3")))
 column_labels <- c("healthy1_control1" = "HC1", "healthy2_control2" = "HC2", "healthy3_control3" = "HC3",
-                   "moderate272_Patient1" = "Pt1", "critical293_Patient1" = "Pt1",
-                   "moderate303_Patient2" = "Pt2", "critical308_Patient2" = "Pt2",
-                   "mild186_Patient3" = "Pt3", "critical213_Patient3" = "Pt3",
-                   "mild227_Patient4" = "Pt4", "critical238_Patient4" = "Pt4",
-                   "critical119_Patient5" = "Pt5", "severe123_Patient5" = "Pt5", "moderate138_Patient5" = "Pt5",
-                   "critical120_Patient6" = "Pt6", "severe122_Patient6" = "Pt6", "moderate124_Patient6" = "Pt6")
+                   "moderate272_Patient1" = "Pt1_m", "critical293_Patient1" = "Pt1_c",
+                   "moderate303_Patient2" = "Pt2_m", "critical308_Patient2" = "Pt2_c",
+                   "mild186_Patient3" = "Pt3_m", "critical213_Patient3" = "Pt3_c",
+                   "mild227_Patient4" = "Pt4_m", "critical238_Patient4" = "Pt4_c",
+                   "critical119_Patient5" = "Pt5_c", "severe123_Patient5" = "Pt5_s", "moderate138_Patient5" = "Pt5_m",
+                   "critical120_Patient6" = "Pt6_c", "severe122_Patient6" = "Pt6_s", "moderate124_Patient6" = "Pt6_m")
 
 
 #Preparing separate matrices for each cell type:
 hm.b <- Heatmap(t(meta.data.B[,colnames(meta.data.B) %in% diff.genes$feature]), 
                 column_split = meta.data.B$illness, name = "Expression", 
-                column_labels = c("HC1", "HC2", "HC3", "Pt1", "Pt2", "Pt3", "Pt4", "Pt5", "Pt6"), row_title = "B cells", column_title = " ",  
+                column_order = c("healthy1_control1", "healthy2_control2", "healthy3_control3",
+                                 "moderate272_Patient1", "moderate303_Patient2", "mild186_Patient3", "mild227_Patient4",
+                                 "moderate138_Patient5", "moderate124_Patient6", "severe123_Patient5", "severe122_Patient6",
+                                 "critical293_Patient1", "critical308_Patient2", "critical213_Patient3", "critical238_Patient4",
+                                 "critical119_Patient5", "critical120_Patient6"),
+                column_labels = column_labels, row_title = "B cells", column_title = " ",  
                 col = expr.cols, top_annotation = col.anno, row_names_gp = gpar(fontsize = 5), 
                 show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
 
 #Subsetting TCR data:
-#TCR <- readRDS("06-TCR-combined.rds")
+TCR <- readRDS("06-TCR-combined.rds")
 obj.t <- TCR[, TCR$sample != "healthy4_control4"]
+obj.t$sample <- factor(obj.t$sample)
 obj.t$sample <- droplevels(obj.t$sample)
 
 obj.cd4 <- obj.t[,obj.t$azimuthNames == "CD4 TCM"]
@@ -2660,23 +2668,23 @@ obj.cd4 <- NormalizeData(obj.cd4)
 
 #Changing the data to "pseudo-bulk", using ISG set:
 obj.cd4.tmp <- ScaleData(obj.cd4)
-avg.exp.mat.cd4 <- AverageExpression(obj.cd4.tmp, group.by = "patient", slot = 'scale.data')
+avg.exp.mat.cd4 <- AverageExpression(obj.cd4.tmp, group.by = "sample", slot = 'scale.data')
 avg.exp.rna.cd4 <- avg.exp.mat.cd4$RNA
 
 #Extracting some meta data for "clustering" the heatmap:
 obj.cd4.tmp@meta.data %>% 
-  group_by(patient, illness) %>% count() -> thing
+  group_by(sample, severity, illness) %>% count() -> thing
 
 #Adding average/bulk expression data to meta data:
 meta.data.CD4 <- data.frame(t(avg.exp.rna.cd4), thing)
 
 #Keeping only genes that exist in the scaled data in the Seurat object:
-meta.data.CD4 <- meta.data.CD4[,c(colnames(meta.data.CD4)[colnames(meta.data.CD4) %in% rownames(obj.cd4.tmp@assays$RNA@scale.data)], "patient", "illness")]
+meta.data.CD4 <- meta.data.CD4[,c(colnames(meta.data.CD4)[colnames(meta.data.CD4) %in% rownames(obj.cd4.tmp@assays$RNA@scale.data)], "sample", "severity", "illness")]
 
 
 hm.cd4 <- Heatmap(t(meta.data.CD4[,colnames(meta.data.CD4) %in% topPathways_all$feature]), column_split = meta.data.CD4$illness,
-                  column_labels = c("HC1", "HC2", "HC3", "Pt1", "Pt2", "Pt3", "Pt4", "Pt5", "Pt6"), row_title = "CD4 TCM",
-                  col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
+                  column_labels = column_labels, row_title = "CD4 TCM", 
+                  col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5), 
                   show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
 
@@ -2713,29 +2721,28 @@ topUp_CD8_hc <- MNP.genes_CD8 %>%
 ## moderate vs critical
 topPathways_all <- bind_rows(topUp_CD8_cov, topUp_CD8_hc)
 
-
 #Subsetting to only DEGs that are ISGs:
 obj.cd8 <- obj.cd8[ISGs[ISGs %in% topPathways_all$feature],]
 obj.cd8 <- NormalizeData(obj.cd8)
 
 #Changing the data to "pseudo-bulk", using ISG set:
 obj.cd8.tmp <- ScaleData(obj.cd8)
-avg.exp.mat.cd8 <- AverageExpression(obj.cd8.tmp, group.by = "patient", slot = 'scale.data')
+avg.exp.mat.cd8 <- AverageExpression(obj.cd8.tmp, group.by = "sample", slot = 'scale.data')
 avg.exp.rna.cd8 <- avg.exp.mat.cd8$RNA
 
 #Extracting some meta data for "clustering" the heatmap:
 obj.cd8.tmp@meta.data %>% 
-  group_by(patient, illness) %>% count() -> thing
+  group_by(sample, severity, illness) %>% count() -> thing
 
 #Adding average/bulk expression data to meta data:
 meta.data.CD8 <- data.frame(t(avg.exp.rna.cd8), thing)
 
 #Keeping only genes that exist in the scaled data in the Seurat object:
-meta.data.CD8 <- meta.data.CD8[,c(colnames(meta.data.CD8)[colnames(meta.data.CD8) %in% rownames(obj.cd8.tmp@assays$RNA@scale.data)], "patient", "illness")]
+meta.data.CD8 <- meta.data.CD8[,c(colnames(meta.data.CD8)[colnames(meta.data.CD8) %in% rownames(obj.cd8.tmp@assays$RNA@scale.data)], "sample", "severity", "illness")]
 
 
 hm.cd8 <- Heatmap(t(meta.data.CD8[,colnames(meta.data.CD8) %in% topPathways_all$feature]), column_split = meta.data.CD8$illness,
-                  column_labels = c("HC1", "HC2", "HC3", "Pt1", "Pt2", "Pt3", "Pt4", "Pt5", "Pt6"), row_title = "CD8 TEM",
+                  column_labels = column_labels, row_title = "CD8 TEM", 
                   col = expr.cols, show_heatmap_legend = F, row_names_gp = gpar(fontsize = 5),
                   show_row_dend = F, show_column_dend = F, cluster_columns = F)
 
