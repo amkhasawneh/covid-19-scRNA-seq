@@ -5,9 +5,9 @@ root=$(pwd)
 cd from_cellranger
 for d in *; do
 	#Preparing AIRR-formatted data:
-	cd $d/vdj_b;
-	AssignGenes.py igblast -s filtered_contig.fasta -b ~/yard/share/igblast/ --organism human --loci ig --format  blast;
-	MakeDb.py igblast -i filtered_contig_igblast.fmt7 -s filtered_contig.fasta -r ~/yard/share/germlines/imgt/human/vdj/imgt_human_*fasta --10x filtered_contig_annotations.csv --extended;
+	cd $root/from_cellranger/$d/vdj_b;
+	AssignGenes.py igblast -s filtered_contig.fasta -b ~/yard/share/igblast/ --organism human --loci ig --format airr;
+	MakeDb.py igblast -i filtered_contig_igblast.fmt7 -s filtered_contig.fasta -r ~/yard/share/germlines/imgt/human/vdj/imgt_human_*.fasta --10x filtered_contig_annotations.csv --extended;
 
 	#Separating heavy and light chains:
 	ParseDb.py select -d filtered_contig_igblast_db-pass.tsv -f locus -u "IGH" --logic all --regex --outname heavy
