@@ -16,9 +16,9 @@ moderate272 <- read.table("from_cellranger/moderate272/vdj_b/filtered_contig_igb
 moderate303 <- read.table("from_cellranger/moderate303/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
 severe122 <- read.table("from_cellranger/severe122/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
 severe123 <- read.table("from_cellranger/severe123/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
-hc1 <- read.table("from_cellranger/healthy1/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
-hc2 <- read.table("from_cellranger/healthy2/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
-hc3 <- read.table("from_cellranger/healthy3/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
+hc1 <- read.table("from_cellranger/hc1/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
+hc2 <- read.table("from_cellranger/hc2/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
+hc3 <- read.table("from_cellranger/hc3/vdj_b/filtered_contig_igblast_db-pass.tsv", sep = "\t", header = T)
 
 
 #Combinging the data frames:
