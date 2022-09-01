@@ -30,9 +30,9 @@ moderate272 <- read.csv("from_cellranger/moderate272/vdj_b/filtered_contig_annot
 moderate303 <- read.csv("from_cellranger/moderate303/vdj_b/filtered_contig_annotations.csv")
 severe122 <- read.csv("from_cellranger/severe122/vdj_b/filtered_contig_annotations.csv")
 severe123 <- read.csv("from_cellranger/severe123/vdj_b/filtered_contig_annotations.csv")
-hc1 <- read.csv("from_cellranger/healthy1/vdj_b/filtered_contig_annotations.csv")
-hc2 <- read.csv("from_cellranger/healthy2/vdj_b/filtered_contig_annotations.csv")
-hc3 <- read.csv("from_cellranger/healthy3/vdj_b/filtered_contig_annotations.csv")
+hc1 <- read.csv("from_cellranger/hc1/vdj_b/filtered_contig_annotations.csv")
+hc2 <- read.csv("from_cellranger/hc2/vdj_b/filtered_contig_annotations.csv")
+hc3 <- read.csv("from_cellranger/hc3/vdj_b/filtered_contig_annotations.csv")
 
 
 #Combinging the data frames:
@@ -1034,7 +1034,6 @@ for (i in levels(factor(BCR@meta.data$sample))) {
 }
 
 #Now, again as above, only including cells with common V genes:
-
 CDRabundancePerSample <-NULL
 for (i in levels(as.factor(CDR123$sample))) {
   abundance <- CDR123[CDR123$sample == i & CDR123$HV == hiclo$v_gene[hiclo$sample == i], ] %>%
@@ -1046,7 +1045,7 @@ for (i in levels(as.factor(CDR123$sample))) {
 write.table(CDRabundancePerSample, "cdr-aa-sequences-by-sample-top-v-genes.tsv", sep = "\t", col.names = NA)
 
 #Again, only this time, including all V(D)J genes of both chains:
-CDRabundanceIsotype <- CDR123 %>%
+CDRabundanceVDJ <- CDR123 %>%
   group_by(cdr3, hv3, hv2, hv1, lt3, lt2, lt1, sample, HV, HJ, Ig, LV, LJ, LC) %>% 
   count() %>% arrange(desc(n))
 write.table(CDRabundanceIsotype, "cdr-aa-sequences-by-sample-heavy-light.tsv", sep = "\t", col.names = NA)
