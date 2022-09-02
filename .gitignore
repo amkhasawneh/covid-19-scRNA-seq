@@ -11,7 +11,7 @@ reated by https://www.toptal.com/developers/gitignore/api/r
 .RDataTmp
 *.rds
 *.rda
-
+ncbi*/
 *.tsv
 from_cellranger/
 ~*/

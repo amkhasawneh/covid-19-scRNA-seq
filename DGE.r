@@ -15,8 +15,14 @@ library(circlize)
 library(ComplexHeatmap)
 
 BCR <- readRDS("05-BCR-combined.rds")
-BCR <- BCR[,BCR$patient != "Control 4"]
-BCR@meta.data$sample <- droplevels(BCR@meta.data$sample)
+
+#Choosing the human Hallmark annotated gene set from the MsigDB:
+m_df <- msigdbr(species = "Homo sapiens", category = "H")
+
+
+#Preparing a list of the gene sets, for fgsea:
+fgsea_sets <- m_df %>% split(x = .$gene_symbol, f = .$gs_name)
+
 
 colorblind_vector <- colorRampPalette(rev(c("#0D0887FF", "#47039FFF", 
               "#7301A8FF", "#9C179EFF", "#BD3786FF", "#D8576BFF",
@@ -1077,16 +1083,16 @@ ggsave(filename = "graphs/enrichment-v-1-18-pt1-wlx-crit.jpeg", dpi = "print",
 
 BCR <- readRDS("05-BCR-combined.rds")
 
-rm(list=setdiff(ls(), "BCR"))
+rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df")))
 
 #For Patient 1:
-pt1 <- BCR[,BCR$patient == "Patient 1" & BCR$v_gene == "IGHV1-18"]
+pt1 <- BCR[,BCR$patient == "Patient 1"]
 pt1$sample <- droplevels(pt1$sample)
 DefaultAssay(pt1) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt1 <- wilcoxauc(pt1, 'sample', c("moderate272_Patient1", "critical293_Patient1"),
+wlx.mrk.pt1 <- wilcoxauc(pt1, 'sample', 
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1104,7 +1110,6 @@ write.table(top_markers(wlx.mrk.pt1), file = "top-wilcox-markers-pt1.tsv", sep =
 ranked.genes <- wlx.mrk.pt1 %>%
   mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
   arrange(-rank)                                  # sort genes by decreasing rank
-#head(n = 10)
 
 # save found markers as exportable table
 write.table(ranked.genes,
@@ -1119,8 +1124,7 @@ write.table(ranked.genes,
 topUpmod <- ranked.genes %>% 
   dplyr::filter(group == "moderate272_Patient1") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj) %>%
-  head(10)
+  top_n(50, wt=-padj)
 
 topDownmod <- ranked.genes %>%
   dplyr::filter(group == "moderate272_Patient1") %>%
@@ -1130,8 +1134,7 @@ topDownmod <- ranked.genes %>%
 topUpcrit <- ranked.genes %>% 
   dplyr::filter(group == "critical293_Patient1") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj) %>%
-  head(10)
+  top_n(50, wt=-padj) 
 
 topDowncrit <- ranked.genes %>% 
   dplyr::filter(group == "critical293_Patient1") %>%
@@ -1153,7 +1156,7 @@ write.table(topPathways,
             row.names = TRUE, 
             col.names = NA)
 
-top <- topPathways %>% group_by(group) %>% subset(padj < 0.05)
+top <- topPathways %>% group_by(group) 
 
 # create a scale.data slot for the selected genes in subset data
 alldata <- ScaleData(object = pt1, 
@@ -1177,40 +1180,97 @@ enrich.topUpmod1 <- enrichr(genes = topUpmod$feature,
 cat(vapply(str_split(enrich.topUpmod1[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
 cat(vapply(str_split(enrich.topUpcrit1[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
 
+enrich.topUpmod1[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpmod1[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpmod1[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpmod1[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
 
 
-ggsave(filename = "graphs/enrichment-pt1-wlx-mod.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpmod1[[1]], 
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Upregulated in Patient 1 moderate"))
+#Selecting only the feature and rank columns of DGE data for fgsea run:
+MNP.genes_c1 <- ranked.genes %>%
+  dplyr::filter(group == "critical293_Patient1") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
 
-ggsave(filename = "graphs/enrichment-pt1-wlx-crit.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpcrit1[[1]], 
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Upregulated in Patient 1 critical"))
+MNP.genes_m1 <- ranked.genes %>%
+  dplyr::filter(group == "moderate272_Patient1") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
 
 
-rm(list=setdiff(ls(), "BCR"))
+#Converting matrices to tables:
+ranks_c <- deframe(MNP.genes_c1)
+ranks_m <- deframe(MNP.genes_m1)
 
-BCR$comp <- 0
-BCR$comp[BCR$v_gene == "IGHV4-34" & BCR$patient == "Patient 2"] <- 1
-BCR$comp <- as.factor(BCR$comp)
+#Running fgsea based on gene set ranking (stats = ranks):
+fgseaRes_c1 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+fgseaRes_m1 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+
+
+names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
+
+#Enrichment plots:
+ggsave(filename = "graphs/enrichment-plot-pt1-critical-moderate.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c1, desc(NES))[1]$pathway]],
+                             ranks_c) + 
+         labs(title = arrange(fgseaRes_c1, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = "graphs/enrichment-plot-pt1-moderate-critical.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m1, desc(NES))[1]$pathway]],
+                             ranks_m) + 
+         labs(title = arrange(fgseaRes_m1, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+
+
+#Plotting pathways:
+fgseaRes_c1$adjPvalue <- ifelse(fgseaRes_c1$padj <= 0.05, "significant", "non-significant")
+cols <- c("significant" = "red") #"non-significant" = "grey", 
+plot_c1 <- ggplot(fgseaRes_c1, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 1 - critical vs moderate") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt1-critical-vs-moderate-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_c1)
+
+all1c <- data.frame(patient = "Patient 1", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c1$pathway, size = fgseaRes_c1$size,
+                  NES = fgseaRes_c1$NES, padj = fgseaRes_c1$padj) %>% arrange(desc(NES))
+all1m <- data.frame(patient = "Patient 1", severity = "moderate", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m1$pathway, size = fgseaRes_m1$size,
+                  NES = fgseaRes_m1$NES, padj = fgseaRes_m1$padj) %>% arrange(desc(NES))
+
+allc <- NULL
+allm <- NULL
+allc <- rbind(allc, first(all1c, 5), last(all1c, 5))
+allm <- rbind(allm, first(all1m, 5), last(all1m, 5))
+
+rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
 #For Patient 2:
-pt2 <- BCR[,BCR$patient == "Patient 2" & BCR$v_gene == "IGHV4-59"]
-pt2 <- BCR[,BCR$patient == "Patient 2" & BCR$v_gene == "IGHV4-34"]
+pt2 <- BCR[,BCR$patient == "Patient 2"]
 pt2$sample <- droplevels(pt2$sample)
 DefaultAssay(pt2) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt2 <- wilcoxauc(BCR, 'comp', c(1,0),
+wlx.mrk.pt2 <- wilcoxauc(pt2, 'sample',
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1228,7 +1288,6 @@ write.table(top_markers(wlx.mrk.pt2), file = "top-wilcox-markers-pt2.tsv", sep =
 ranked.genes <- wlx.mrk.pt2 %>%
   mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
   arrange(-rank)                                  # sort genes by decreasing rank
-#head(n = 10)
 
 # save found markers as exportable table
 write.table(ranked.genes,
@@ -1243,8 +1302,7 @@ write.table(ranked.genes,
 topUpmod <- ranked.genes %>% 
   dplyr::filter(group == "moderate303_Patient2") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj) %>%
-  head(10)
+  top_n(50, wt=-padj) 
 
 topDownmod <- ranked.genes %>%
   dplyr::filter(group == "moderate303_Patient2") %>%
@@ -1254,8 +1312,7 @@ topDownmod <- ranked.genes %>%
 topUpcrit <- ranked.genes %>% 
   dplyr::filter(group == "critical308_Patient2") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj) %>%
-  head(10)
+  top_n(50, wt=-padj)
 
 topDowncrit <- ranked.genes %>% 
   dplyr::filter(group == "critical308_Patient2") %>%
@@ -1279,7 +1336,7 @@ write.table(topPathways,
 top <- topPathways %>% group_by(group)
 
 # create a scale.data slot for the selected genes in subset data
-alldata <- ScaleData(object = BCR, 
+alldata <- ScaleData(object = pt2, 
                      features = as.character(unique(top$feature), assay = "RNA"))
 
 DefaultAssay(alldata) <- "RNA"
@@ -1296,49 +1353,98 @@ enrich.topUpcrit2 <- enrichr(genes = topUpcrit$feature,
                                databases = "GO_Biological_Process_2021")
 enrich.topUpmod2 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
-enrich.topDowncrit2 <- enrichr(genes = topDowncrit$feature, 
-                               databases = "GO_Biological_Process_2021")
-
-cat(vapply(str_split(enrich.topUpmod2[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
-cat(vapply(str_split(enrich.topUpcrit2[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
-cat(vapply(str_split(enrich.topDowncrit2[["GO_Biological_Process_2021"]]$Term[1:6] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
-enrich.topDowncrit2[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topDowncrit2[["GO_Biological_Process_2021"]]$Term ,"[(GO:*)]"), "[", "", 1)
-
-ggsave(filename = "graphs/enrichment-pt2-wlx-crit.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpcrit2[[1]], 
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Upregulated in Patient 2 critical"))
-
-ggsave(filename = "graphs/enrichment-pt2-wlx-mod.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpmod2[[1]], 
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Upregulated in Patient 2 moderate"))
-
-ggsave(filename = "graphs/enrichment-pt2-wlx-down-crit.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topDowncrit2[[1]], showTerms = 6,
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Downregulated in Patient 2 critical (IGHV4-34)"))
 
 
-rm(list=setdiff(ls(), "BCR"))
+
+enrich.topUpmod2[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpmod2[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpcrit2[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpcrit2[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+
+#Selecting only the feature and rank columns of DGE data for fgsea run:
+MNP.genes_c2 <- ranked.genes %>%
+  dplyr::filter(group == "critical308_Patient2") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+
+MNP.genes_m2 <- ranked.genes %>%
+  dplyr::filter(group == "moderate303_Patient2") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+
+
+#Converting matrices to tables:
+ranks_c <- deframe(MNP.genes_c2)
+ranks_m <- deframe(MNP.genes_m2)
+
+#Running fgsea based on gene set ranking (stats = ranks):
+fgseaRes_c2 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+fgseaRes_m2 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+
+
+names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
+
+#Enrichment plots:
+ggsave(filename = "graphs/enrichment-plot-pt2-critical-moderate.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c2, desc(NES))[1]$pathway]],
+                             ranks_c) + 
+         labs(title = arrange(fgseaRes_c2, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = "graphs/enrichment-plot-pt2-moderate-critical.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m2, desc(NES))[1]$pathway]],
+                             ranks_m) + 
+         labs(title = arrange(fgseaRes_m2, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+
+
+#Plotting pathways:
+fgseaRes_c2$adjPvalue <- ifelse(fgseaRes_c2$padj <= 0.05, "significant", "non-significant")
+cols <- c("significant" = "red") #"non-significant" = "grey", 
+plot_c2 <- ggplot(fgseaRes_c2, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 2 - critical vs moderate") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt2-critical-vs-moderate-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_c2)
+
+all2c <- data.frame(patient = "Patient 2", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c2$pathway, size = fgseaRes_c2$size,
+                    NES = fgseaRes_c2$NES, padj = fgseaRes_c2$padj) %>% arrange(desc(NES))
+all2m <- data.frame(patient = "Patient 2", severity = "moderate", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m2$pathway, size = fgseaRes_m2$size,
+                    NES = fgseaRes_m2$NES, padj = fgseaRes_m2$padj) %>% arrange(desc(NES))
+
+
+allc <- rbind(allc, first(all2c, 5), last(all2c, 5))
+allm <- rbind(allm, first(all2m, 5), last(all2m, 5))
+
+rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
 #For Patient 3:
-pt3 <- BCR[,BCR$patient == "Patient 3" & BCR$v_gene == "IGHV4-39"]
+pt3 <- BCR[,BCR$patient == "Patient 3"]
 pt3$sample <- droplevels(pt3$sample)
 DefaultAssay(pt3) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt3 <- wilcoxauc(pt3, 'sample', c("mild186_Patient3", "critical213_Patient3"),
+wlx.mrk.pt3 <- wilcoxauc(pt3, 'sample', 
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1356,7 +1462,6 @@ write.table(top_markers(wlx.mrk.pt3), file = "top-wilcox-markers-pt3.tsv", sep =
 ranked.genes <- wlx.mrk.pt3 %>%
   mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
   arrange(-rank)                                  # sort genes by decreasing rank
-#head(n = 10)
 
 # save found markers as exportable table
 write.table(ranked.genes,
@@ -1371,9 +1476,7 @@ write.table(ranked.genes,
 topUpmod <- ranked.genes %>% 
   dplyr::filter(group == "mild186_Patient3") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj) %>%
-  head(10) %>%
-  head(10)
+  top_n(50, wt=-padj) 
 
 topDownmod <- ranked.genes %>%
   dplyr::filter(group == "mild186_Patient3") %>%
@@ -1383,9 +1486,7 @@ topDownmod <- ranked.genes %>%
 topUpcrit <- ranked.genes %>% 
   dplyr::filter(group == "critical213_Patient3") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj) %>%
-  head(10) %>% 
-  head(10)
+  top_n(50, wt=-padj) 
 
 topDowncrit <- ranked.genes %>% 
   dplyr::filter(group == "critical213_Patient3") %>%
@@ -1427,35 +1528,99 @@ enrich.topUpcrit3 <- enrichr(genes = topUpcrit$feature,
 enrich.topUpmod3 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
 
-cat(vapply(str_split(enrich.topUpmod3[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
 
-ggsave(filename = "graphs/enrichment-pt3-wlx-crit.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpcrit3[[1]], 
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Upregulated in Patient 3 critical"))
+enrich.topUpmod3[["GO_Biological_Process_2021"]]$Term <-  vapply(str_split(enrich.topUpmod3[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpcrit3[["GO_Biological_Process_2021"]]$Term <-  vapply(str_split(enrich.topUpcrit3[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
 
-ggsave(filename = "graphs/enrichment-pt3-wlx-mod.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpmod3[[1]], 
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Upregulated in Patient 3 moderate"))
+#Selecting only the feature and rank columns of DGE data for fgsea run:
+MNP.genes_c3 <- ranked.genes %>%
+  dplyr::filter(group == "critical213_Patient3") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+
+MNP.genes_m3 <- ranked.genes %>%
+  dplyr::filter(group == "mild186_Patient3") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
 
 
-rm(list=setdiff(ls(), "BCR"))
+#Converting matrices to tables:
+ranks_c <- deframe(MNP.genes_c3)
+ranks_m <- deframe(MNP.genes_m3)
+
+#Running fgsea based on gene set ranking (stats = ranks):
+fgseaRes_c3 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+fgseaRes_m3 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+
+
+names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
+
+#Enrichment plots:
+ggsave(filename = "graphs/enrichment-plot-pt3-critical-mild.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c3, desc(NES))[1]$pathway]],
+                             ranks_c) + 
+         labs(title = arrange(fgseaRes_c3, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = "graphs/enrichment-plot-pt3-mild-critical.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m3, desc(NES))[1]$pathway]],
+                             ranks_m) + 
+         labs(title = arrange(fgseaRes_m3, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+
+
+#Plotting pathways:
+fgseaRes_c3$adjPvalue <- ifelse(fgseaRes_c3$padj <= 0.05, "significant", "non-significant")
+cols <- c("significant" = "red") #"non-significant" = "grey", 
+plot_c3 <- ggplot(fgseaRes_c3, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 3 - critical vs mild") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt3-critical-vs-mild-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_c3)
+
+
+all3c <- data.frame(patient = "Patient 3", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c3$pathway, size = fgseaRes_c3$size,
+                    NES = fgseaRes_c3$NES, padj = fgseaRes_c3$padj) %>% arrange(desc(NES))
+all3m <- data.frame(patient = "Patient 3", severity = "mild", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m3$pathway, size = fgseaRes_m3$size,
+                    NES = fgseaRes_m3$NES, padj = fgseaRes_m3$padj) %>% arrange(desc(NES))
+
+
+allc <- rbind(allc, first(all3c, 5), last(all3c, 5))
+allm <- rbind(allm, first(all3m, 5), last(all3m, 5))
+
+rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
+
+
 
 #For Patient 4:
-pt4 <- BCR[,BCR$patient == "Patient 4" & BCR$v_gene == "IGHV3-23"]
+pt4 <- BCR[,BCR$patient == "Patient 4"]
 pt4$sample <- droplevels(pt4$sample)
 DefaultAssay(pt4) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt4 <- wilcoxauc(pt4, 'sample', c("mild227_Patient4", "critical238_Patient4"),
+wlx.mrk.pt4 <- wilcoxauc(pt4, 'sample',
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1473,7 +1638,6 @@ write.table(top_markers(wlx.mrk.pt4), file = "top-wilcox-markers-pt4.tsv", sep =
 ranked.genes <- wlx.mrk.pt4 %>%
   mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
   arrange(-rank)                                  # sort genes by decreasing rank
-#head(n = 10)
 
 # save found markers as exportable table
 write.table(ranked.genes,
@@ -1488,8 +1652,7 @@ write.table(ranked.genes,
 topUpmod <- ranked.genes %>% 
   dplyr::filter(group == "mild227_Patient4") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj) %>%
-  head(10)
+  top_n(50, wt=-padj) 
 
 topDownmod <- ranked.genes %>%
   dplyr::filter(group == "mild227_Patient4") %>%
@@ -1499,8 +1662,7 @@ topDownmod <- ranked.genes %>%
 topUpcrit <- ranked.genes %>% 
   dplyr::filter(group == "critical238_Patient4") %>%
   filter(rank > 0) %>% 
-  top_n(50, wt=-padj) %>%
-  head(10)
+  top_n(50, wt=-padj) 
 
 topDowncrit <- ranked.genes %>% 
   dplyr::filter(group == "critical238_Patient4") %>%
@@ -1541,37 +1703,109 @@ enrich.topUpcrit4 <- enrichr(genes = topUpcrit$feature,
 enrich.topUpmod4 <- enrichr(genes = topUpmod$feature, 
                                databases = "GO_Biological_Process_2021")
 
-cat(vapply(str_split(enrich.topUpmod4[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+enrich.topUpmod4[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpmod4[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpcrit4[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpcrit4[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
 
 
-ggsave(filename = "graphs/enrichment-pt4-wlx-crit.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpcrit4[[1]], 
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Upregulated in Patient 4 critical"))
+#Selecting only the feature and rank columns of DGE data for fgsea run:
+MNP.genes_c <- ranked.genes %>%
+  dplyr::filter(group == "critical238_Patient4") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
 
-ggsave(filename = "graphs/enrichment-pt4-wlx-mod.jpeg", dpi = "print",
-       height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpmod4[[1]], 
-           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
-           xlab = NULL,
-           ylab = NULL,
-           title = "Upregulated in Patient 4 moderate"))
+MNP.genes_m <- ranked.genes %>%
+  dplyr::filter(group == "mild227_Patient4") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
 
-rm(list=setdiff(ls(), "BCR"))
+
+#Converting matrices to tables:
+ranks_c <- deframe(MNP.genes_c)
+ranks_m <- deframe(MNP.genes_m)
+
+#Running fgsea based on gene set ranking (stats = ranks):
+fgseaRes_c4 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+                                maxSize = 200) %>% arrange(padj)
+fgseaRes_m4 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+                                maxSize = 200) %>% arrange(padj)
+
+
+names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
+
+#Enrichment plots:
+ggsave(filename = "graphs/enrichment-plot-pt4-critical-mild.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_c4, desc(NES))[1]$pathway]],
+                             ranks_c) + 
+         labs(title = arrange(fgseaRes_c4, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = "graphs/enrichment-plot-pt5-mild-critical.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_m4, desc(NES))[1]$pathway]],
+                             ranks_m) + 
+         labs(title = arrange(fgseaRes_m4, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+
+
+#Plotting pathways:
+fgseaRes_c4$adjPvalue <- ifelse(fgseaRes_c4$padj <= 0.05, "significant", "non-significant")
+cols <- c("significant" = "red") #"non-significant" = "grey", 
+plot_c4 <- ggplot(fgseaRes_c4, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 4 - critical vs mild") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt4-critical-vs-mild-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_c4)
+
+
+all4c <- data.frame(patient = "Patient 4", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c4$pathway, size = fgseaRes_c4$size,
+                    NES = fgseaRes_c4$NES, padj = fgseaRes_c4$padj) %>% arrange(desc(NES))
+all4m <- data.frame(patient = "Patient 4", severity = "mild", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m4$pathway, size = fgseaRes_m4$size,
+                    NES = fgseaRes_m4$NES, padj = fgseaRes_m4$padj) %>% arrange(desc(NES))
+
+
+allc <- rbind(allc, first(all4c, 5), last(all4c, 5))
+allm <- rbind(allm, first(all4m, 5), last(all4m, 5))
+
+rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
 #For Patient 5:
-pt5 <- BCR[,BCR$patient == "Patient 5" & BCR$v_gene == "IGHV3-23"]
+pt5 <- BCR[,BCR$patient == "Patient 5"]
 pt5$sample <- droplevels(pt5$sample)
 DefaultAssay(pt5) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 #, "moderate138_Patient5"
 
-wlx.mrk.pt5 <- wilcoxauc(pt5, 'sample',
+wlx.mrk.pt5.cs <- wilcoxauc(pt5, 'sample',
                          c("critical119_Patient5", "severe123_Patient5"),
+                               seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+wlx.mrk.pt5.cm <- wilcoxauc(pt5, 'sample',
+                         c("critical119_Patient5", "moderate138_Patient5"),
+                               seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+
+wlx.mrk.pt5.ms <- wilcoxauc(pt5, 'sample',
+                         c("moderate138_Patient5", "severe123_Patient5"),
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1586,10 +1820,18 @@ top_markers(wlx.mrk.pt5)
 write.table(top_markers(wlx.mrk.pt5), file = "top-wilcox-markers-pt5.tsv", sep = "\t", col.names = NA)
 
 # rank genes using rrho algorithm
-ranked.genes <- wlx.mrk.pt5 %>%
+ranked.genes.cs <- wlx.mrk.pt5.cs %>%
   mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
   arrange(-rank)                                  # sort genes by decreasing rank
-#head(n = 10)
+
+ranked.genes.cm <- wlx.mrk.pt5.cm %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+
+ranked.genes.ms <- wlx.mrk.pt5.ms %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+
 
 # save found markers as exportable table
 write.table(ranked.genes,
@@ -1601,37 +1843,35 @@ write.table(ranked.genes,
             col.names = NA)
 
 # choose top upregulated genes
-topUpcrit <- ranked.genes %>% 
+topUpcritsev <- ranked.genes.cs %>% 
+  dplyr::filter(group == "critical119_Patient5") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+topUpcritmod <- ranked.genes.cm %>% 
   dplyr::filter(group == "critical119_Patient5") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 
-topDowncrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical119_Patient5") %>%
-  filter(rank < 0) %>% 
+topUpsevmod <- ranked.genes.ms %>% 
+  dplyr::filter(group == "severe123_Patient5") %>%
+  filter(rank > 0) %>% 
   top_n(50, wt=-padj)
-
-topUpsev <- ranked.genes %>% 
+topUpsevcrit <- ranked.genes.cs %>% 
   dplyr::filter(group == "severe123_Patient5") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 
-topDownsev <- ranked.genes %>% 
-  dplyr::filter(group == "severe123_Patient5") %>%
-  filter(rank < 0) %>% 
+topUpmodcrit <- ranked.genes.cm %>% 
+  dplyr::filter(group == "moderate138_Patient5") %>%
+  filter(rank > 0) %>% 
   top_n(50, wt=-padj)
-
-topUpmod <- ranked.genes %>% 
+topUpmodsev <- ranked.genes.ms %>% 
   dplyr::filter(group == "moderate138_Patient5") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 
-topDownmod <- ranked.genes %>%
-  dplyr::filter(group == "moderate138_Patient5") %>%
-  filter(rank < 0) %>%
-  top_n(50, wt=-padj)
 
-topPathways <- bind_rows(topUpcrit, topDowncrit, topUpsev, topDownsev, topUpmod, topDownmod)
+topPathways <- bind_rows(topUpcritmod, topUpcritsev, topUpsevcrit, topUpsevmod, topUpmodcrit, topUpmodsev)
 
 # save found markers as exportable table
 write.table(topPathways,
@@ -1643,8 +1883,6 @@ write.table(topPathways,
             col.names = NA)
 
 top <- topPathways %>% group_by(group) 
-cat(topUpmod$feature[1:10], sep = ", ")
-cat(topUpsev$feature[1:10], sep = ", ")
 
 # create a scale.data slot for the selected genes in subset data
 alldata <- ScaleData(object = pt5, 
@@ -1660,51 +1898,338 @@ ggsave(filename = "graphs/wilcox-rrho-pt5.jpeg", dpi = "print",
   theme(axis.text.y = element_text(size = 4)))
 
 # Perform enrichment on top 10 genes enriched in Patient 5:
-enrich.topUpcrit5 <- enrichr(genes = topUpcrit$feature, 
+enrich.topUpcrit5.cs <- enrichr(genes = topUpcritsev$feature, 
                                databases = "GO_Biological_Process_2021")
-enrich.topUpsev5 <- enrichr(genes = topUpsev$feature, 
+enrich.topUpcrit5.cm <- enrichr(genes = topUpcritmod$feature, 
                                databases = "GO_Biological_Process_2021")
-enrich.topUpmod5 <- enrichr(genes = topUpmod$feature, 
+enrich.topUpsev5.sc <- enrichr(genes = topUpsevcrit$feature, 
+                               databases = "GO_Biological_Process_2021")
+enrich.topUpsev5.sm <- enrichr(genes = topUpsevmod$feature, 
+                               databases = "GO_Biological_Process_2021")
+enrich.topUpmod5.mc <- enrichr(genes = topUpmodcrit$feature, 
+                               databases = "GO_Biological_Process_2021")
+enrich.topUpmod5.ms <- enrichr(genes = topUpmodsev$feature, 
                                databases = "GO_Biological_Process_2021")
 
-cat(vapply(str_split(enrich.topUpmod5[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
-cat(vapply(str_split(enrich.topUpsev5[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+enrich.topUpmod5.mc[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpmod5.mc[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpmod5.ms[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpmod5.ms[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpsev5.cs[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpsev5.cs[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpsev5.ms[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpsev5.ms[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpcrit5.cs[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpcrit5.cs[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpcrit5.cm[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpcrit5.cm[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
 
-ggsave(filename = "graphs/enrichment-pt5-wlx-crit.jpeg", dpi = "print",
+
+ggsave(filename = "graphs/enrichment-pt5-wlx-crit-mod.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpcrit5[[1]], 
+       plot = plotEnrich(enrich.topUpcrit5.cm[[1]], 
            numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
            xlab = NULL,
            ylab = NULL,
-           title = "Upregulated in Patient 5 critical"))
-
-ggsave(filename = "graphs/enrichment-pt5-wlx-sev.jpeg", dpi = "print",
+           title = "Upregulated in Patient 5 critical vs moderate"))
+ggsave(filename = "graphs/enrichment-pt5-wlx-crit-sev.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpsev5[[1]], 
+       plot = plotEnrich(enrich.topUpcrit5.cs[[1]], 
            numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
            xlab = NULL,
            ylab = NULL,
-           title = "Upregulated in Patient 5 severe"))
+           title = "Upregulated in Patient 5 critical vs severe"))
 
+ggsave(filename = "graphs/enrichment-pt5-wlx-sev-mod.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpsev5.ms[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 5 severe vs moderate"))
+ggsave(filename = "graphs/enrichment-pt5-wlx-sev-crit.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpsev5.cs[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 5 severe vs critical"))
+
+ggsave(filename = "graphs/enrichment-pt5-wlx-mod-sev.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpmod5.ms[[1]], 
+           numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+           xlab = NULL,
+           ylab = NULL,
+           title = "Upregulated in Patient 5 moderate vs severe"))
 ggsave(filename = "graphs/enrichment-pt5-wlx-mod.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpmod5[[1]], 
+       plot = plotEnrich(enrich.topUpmod5.mc[[1]], 
            numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
            xlab = NULL,
            ylab = NULL,
-           title = "Upregulated in Patient 5 moderate"))
+           title = "Upregulated in Patient 5 moderate vs critical"))
 
-rm(list=setdiff(ls(), "BCR"))
+#Selecting only the feature and rank columns of DGE data for fgsea run:
+MNP.genes_cs <- ranked.genes.cs %>%
+  dplyr::filter(group == "critical119_Patient5") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+MNP.genes_cm <- ranked.genes.cm %>%
+  dplyr::filter(group == "critical119_Patient5") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+
+MNP.genes_sc <- ranked.genes.cs %>%
+  dplyr::filter(group == "severe123_Patient5") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+MNP.genes_sm <- ranked.genes.ms %>%
+  dplyr::filter(group == "severe123_Patient5") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+
+MNP.genes_mc <- ranked.genes.cm %>%
+  dplyr::filter(group == "moderate138_Patient5") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+MNP.genes_ms <- ranked.genes.ms %>%
+  dplyr::filter(group == "moderate138_Patient5") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+
+
+#Converting matrices to tables:
+ranks_cs <- deframe(MNP.genes_cs)
+ranks_cm <- deframe(MNP.genes_cm)
+ranks_sc <- deframe(MNP.genes_sc)
+ranks_sm <- deframe(MNP.genes_sm)
+ranks_mc <- deframe(MNP.genes_mc)
+ranks_ms <- deframe(MNP.genes_ms)
+
+#Running fgsea based on gene set ranking (stats = ranks):
+fgseaRes_cs5 <- fgseaMultilevel(fgsea_sets, stats = ranks_cs, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+fgseaRes_cm5 <- fgseaMultilevel(fgsea_sets, stats = ranks_cm, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+fgseaRes_sc5 <- fgseaMultilevel(fgsea_sets, stats = ranks_sc, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+fgseaRes_sm5 <- fgseaMultilevel(fgsea_sets, stats = ranks_sm, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+fgseaRes_mc5 <- fgseaMultilevel(fgsea_sets, stats = ranks_mc, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+fgseaRes_ms5 <- fgseaMultilevel(fgsea_sets, stats = ranks_ms, nPermSimple = 1000, 
+                               maxSize = 200) %>% arrange(padj)
+
+
+fgseaRes_cs$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_cs$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_cm$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_cm$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_sc$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_sc$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_sm$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_sm$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_mc$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_mc$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_ms$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_ms$pathway) |> gsub(pattern = "_", replacement = " ")
+
+names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
+
+#Enrichment plots:
+ggsave(filename = "graphs/enrichment-plot-pt5-critical-severe.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_cs, desc(NES))[1]$pathway]],
+                             ranks_cs) + 
+         labs(title = arrange(fgseaRes_cs, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+ggsave(filename = "graphs/enrichment-plot-pt5-critical-moderate.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_cm, desc(NES))[1]$pathway]],
+                             ranks_cm) + 
+         labs(title = arrange(fgseaRes_cm, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = "graphs/enrichment-plot-pt5-severe-critical.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_sc, desc(NES))[1]$pathway]],
+                             ranks_sc) + 
+         labs(title = arrange(fgseaRes_sc, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+ggsave(filename = "graphs/enrichment-plot-pt5-severe-moderate.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_sm, desc(NES))[1]$pathway]],
+                             ranks_sm) + 
+         labs(title = arrange(fgseaRes_sm, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = "graphs/enrichment-plot-pt5-moderate-critical.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_mc, desc(NES))[1]$pathway]],
+                             ranks_mc) + 
+         labs(title = arrange(fgseaRes_mc, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+ggsave(filename = "graphs/enrichment-plot-pt5-moderate-severe.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_ms, desc(NES))[1]$pathway]],
+                             ranks_ms) + 
+         labs(title = arrange(fgseaRes_ms, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+
+
+#Plotting pathways:
+fgseaRes_cs5$adjPvalue <- ifelse(fgseaRes_cs5$padj <= 0.05, "significant", "non-significant")
+cols <- c("significant" = "red") #"non-significant" = "grey", 
+plot_cs <- ggplot(fgseaRes_cs5, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 5 - critical vs severe") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt5-critical-vs-severe-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_cs)
+
+
+fgseaRes_cm5$adjPvalue <- ifelse(fgseaRes_cm5$padj <= 0.05, "significant", "non-significant")
+cols <- c("significant" = "red") #"non-significant" = "grey", 
+plot_cm <- ggplot(fgseaRes_cm5, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 5 - critical vs moderate") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt5-critical-vs-moderate-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_cm)
+
+fgseaRes_sc5$adjPvalue <- ifelse(fgseaRes_sc5$padj <= 0.05, "significant", "non-significant")
+plot_sc <- ggplot(fgseaRes_sc5, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 5 - severe vs critical") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt5-severe-vs-critical-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_sc)
+
+fgseaRes_sm5$adjPvalue <- ifelse(fgseaRes_sm5$padj <= 0.05, "significant", "non-significant")
+plot_sm <- ggplot(fgseaRes_sm5, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 5 - severe vs moderate") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt5-severe-vs-moderate-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_sm)
+
+
+
+fgseaRes_mc5$adjPvalue <- ifelse(fgseaRes_mc5$padj <= 0.05, "significant", "non-significant")
+plot_mc <- ggplot(fgseaRes_mc5, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 5 - moderate vs critical") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt5-moderatee-vs-critical-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_mc)
+
+fgseaRes_ms5$adjPvalue <- ifelse(fgseaRes_ms5$padj <= 0.05, "significant", "non-significant")
+plot_ms <- ggplot(fgseaRes_ms, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 5 - moderate vs severe") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt5-moderatee-vs-severe-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_ms)
+
+
+
+
+all5c <- data.frame(patient = "Patient 5", severity = "critical", progress = "recovering", outcome = "deceased", pathway = fgseaRes_cm5$pathway, size = fgseaRes_cm5$size,
+                    NES = fgseaRes_cm5$NES, padj = fgseaRes_cm5$padj) %>% arrange(desc(NES))
+all5m <- data.frame(patient = "Patient 5", severity = "moderate", progress = "recovering", outcome = "deceased", pathway = fgseaRes_mc5$pathway, size = fgseaRes_mc5$size,
+                    NES = fgseaRes_mc5$NES, padj = fgseaRes_mc5$padj) %>% arrange(desc(NES))
+
+
+allc <- rbind(allc, first(all5c, 5), last(all5c, 5))
+allm <- rbind(allm, first(all5m, 5), last(all5m, 5))
+
+rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
 #For Patient 6:
-pt6 <- BCR[,BCR$patient == "Patient 6" & BCR$v_gene == "IGHV4-59"]
+pt6 <- BCR[,BCR$patient == "Patient 6"]
 pt6$sample <- droplevels(pt6$sample)
 DefaultAssay(pt6) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto: "severe122_Patient6", 
 
-wlx.mrk.pt6 <- wilcoxauc(pt6, 'sample',
+wlx.mrk.pt6.cm <- wilcoxauc(pt6, 'sample',
                          c("critical120_Patient6",  "moderate124_Patient6"),
+                         seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+wlx.mrk.pt6.cs <- wilcoxauc(pt6, 'sample',
+                         c("critical120_Patient6",  "severe122_Patient6"),
+                         seurat_assay='RNA', assay = "data") %>%
+  subset(padj < 0.05) %>% arrange(padj)
+wlx.mrk.pt6.sm <- wilcoxauc(pt6, 'sample',
+                         c("severe122_Patient6",  "moderate124_Patient6"),
                          seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1719,10 +2244,18 @@ top_markers(wlx.mrk.pt6)
 write.table(top_markers(wlx.mrk.pt6), file = "top-wilcox-markers-pt6.tsv", sep = "\t", col.names = NA)
 
 # rank genes using rrho algorithm
-ranked.genes <- wlx.mrk.pt6 %>%
+ranked.genes.cs <- wlx.mrk.pt6.cs %>%
   mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
   arrange(-rank)                                  # sort genes by decreasing rank
-#head(n = 10)
+
+ranked.genes.cm <- wlx.mrk.pt6.cm %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+
+ranked.genes.sm <- wlx.mrk.pt6.sm %>%
+  mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+  arrange(-rank)                                  # sort genes by decreasing rank
+
 
 # save found markers as exportable table
 write.table(ranked.genes,
@@ -1734,37 +2267,37 @@ write.table(ranked.genes,
             col.names = NA)
 
 # choose top upregulated genes
-topUpcrit <- ranked.genes %>% 
+topUpcrit.cs <- ranked.genes.cs %>% 
+  dplyr::filter(group == "critical120_Patient6") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+topUpcrit.cm <- ranked.genes.cm %>% 
   dplyr::filter(group == "critical120_Patient6") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 
-topDowncrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical120_Patient6") %>%
-  filter(rank < 0) %>% 
-  top_n(50, wt=-padj)
 
-topUpsev <- ranked.genes %>% 
+topUpsev.cs <- ranked.genes.cs %>% 
+  dplyr::filter(group == "severe122_Patient6") %>%
+  filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+topUpsev.sm <- ranked.genes.sm %>% 
   dplyr::filter(group == "severe122_Patient6") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 
-topDownsev <- ranked.genes %>% 
-  dplyr::filter(group == "severe122_Patient6") %>%
-  filter(rank < 0) %>% 
-  top_n(50, wt=-padj)
 
-topUpmod <- ranked.genes %>% 
+topUpmod.cm <- ranked.genes.cm %>% 
+  dplyr::filter(group == "moderate124_Patient6") %>%
+  filter(rank > 0) %>% 
+  top_n(60, wt=-padj)
+topUpmod.sm <- ranked.genes.sm %>% 
   dplyr::filter(group == "moderate124_Patient6") %>%
   filter(rank > 0) %>% 
   top_n(60, wt=-padj)
 
-topDownmod <- ranked.genes %>%
-  dplyr::filter(group == "moderate124_Patient6") %>%
-  filter(rank < 0) %>%
-  top_n(50, wt=-padj)
 
-topPathways <- bind_rows(topUpcrit, topDowncrit, topUpsev, topDownsev, topUpmod, topDownmod)
+topPathways <- bind_rows(topUpcrit.cs, topUpcrit.cm, topUpsev.cs, topUpsev.sm, topUpmod.cm, topUpmod.sm)
 
 cat(topUpcrit$feature[1:10], sep = ", ")
 cat(topUpmod$feature[1:10], sep = ", ")
@@ -1795,44 +2328,375 @@ ggsave(filename = "graphs/wilcox-rrho-pt6.jpeg", dpi = "print",
          theme(axis.text.y = element_text(size = 4)))
 
 # Perform enrichment on top 10 genes enriched in Patient 6:
-enrich.topUpcrit6 <- enrichr(genes = topUpcrit$feature, 
+enrich.topUpcrit6.cs <- enrichr(genes = topUpcrit.cs$feature, 
                              databases = "GO_Biological_Process_2021")
-enrich.topUpsev6 <- enrichr(genes = topUpsev$feature, 
+enrich.topUpcrit6.cm <- enrichr(genes = topUpcrit.cm$feature, 
+                             databases = "GO_Biological_Process_2021")
+enrich.topUpsev6.cs <- enrichr(genes = topUpsev.cs$feature, 
                             databases = "GO_Biological_Process_2021")
-enrich.topUpmod6 <- enrichr(genes = topUpmod$feature, 
+enrich.topUpsev6.sm <- enrichr(genes = topUpsev.sm$feature, 
+                            databases = "GO_Biological_Process_2021")
+enrich.topUpmod6.cm <- enrichr(genes = topUpmod.cm$feature, 
+                            databases = "GO_Biological_Process_2021")
+enrich.topUpmod6.sm <- enrichr(genes = topUpmod.sm$feature, 
                             databases = "GO_Biological_Process_2021")
 
-cat(vapply(str_split(enrich.topUpmod6[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
-cat(vapply(str_split(enrich.topUpsev6[["GO_Biological_Process_2021"]]$Term[1:20] ,"[(GO:*)]"), "[", "", 1), sep = ", ")
+enrich.topUpmod6.cm[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpmod6.cm[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpmod6.sm[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpmod6.sm[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpsev6.cs[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpsev6.cs[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpsev6.sm[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpsev6.sm[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpcrit6.cs[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpcrit6.cs[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
+enrich.topUpcrit6.cm[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich.topUpcrit6.cm[["GO_Biological_Process_2021"]]$Term, "[(GO:*)]"), "[", "", 1)
 
 
-ggsave(filename = "graphs/enrichment-pt6-wlx-crit.jpeg", dpi = "print",
+ggsave(filename = "graphs/enrichment-pt6-wlx-crit-sev.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpcrit6[[1]], 
+       plot = plotEnrich(enrich.topUpcrit6.cs[[1]], 
                          numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
                          xlab = NULL,
                          ylab = NULL,
-                         title = "Upregulated in Patient 6 critical"))
-
-ggsave(filename = "graphs/enrichment-pt6-wlx-sev.jpeg", dpi = "print",
+                         title = "Upregulated in Patient 6 critical vs severe"))
+ggsave(filename = "graphs/enrichment-pt6-wlx-crit-mod.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpsev6[[1]], 
+       plot = plotEnrich(enrich.topUpcrit6.cm[[1]], 
                          numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
                          xlab = NULL,
                          ylab = NULL,
-                         title = "Upregulated in Patient 6 severe"))
+                         title = "Upregulated in Patient 6 critical vs moderate"))
 
-ggsave(filename = "graphs/enrichment-pt6-wlx-mod.jpeg", dpi = "print",
+ggsave(filename = "graphs/enrichment-pt6-wlx-sev-crit.jpeg", dpi = "print",
        height = 10, width = 10, units = "in",
-       plot = plotEnrich(enrich.topUpmod6[[1]], 
+       plot = plotEnrich(enrich.topUpsev6.cs[[1]], 
                          numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
                          xlab = NULL,
                          ylab = NULL,
-                         title = "Upregulated in Patient 6 moderate"))
+                         title = "Upregulated in Patient 6 severe vs critical"))
+ggsave(filename = "graphs/enrichment-pt6-wlx-sev-mod.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpsev6.sm[[1]], 
+                         numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+                         xlab = NULL,
+                         ylab = NULL,
+                         title = "Upregulated in Patient 6 severe vs moderate"))
+
+ggsave(filename = "graphs/enrichment-pt6-wlx-mod-crit.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpmod6.cm[[1]], 
+                         numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+                         xlab = NULL,
+                         ylab = NULL,
+                         title = "Upregulated in Patient 6 moderate vs critical"))
+ggsave(filename = "graphs/enrichment-pt6-wlx-mod-sev.jpeg", dpi = "print",
+       height = 10, width = 10, units = "in",
+       plot = plotEnrich(enrich.topUpmod6.sm[[1]], 
+                         numChar = 80, y = "Count", orderBy = "Adjusted.P.value",
+                         xlab = NULL,
+                         ylab = NULL,
+                         title = "Upregulated in Patient 6 moderate vs severe"))
+
+#Separating moderate genes from critical genes:
+MNP.genes <- diff.genes %>%
+  mutate(rank = -log10(pval) * sign(logFC)) %>%
+  arrange(-rank)  
+
+#Selecting only the feature and rank columns of DGE data for fgsea run:
+MNP.genes_cs <- ranked.genes.cs %>%
+  dplyr::filter(group == "critical120_Patient6") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+MNP.genes_cm <- ranked.genes.cm %>%
+  dplyr::filter(group == "critical120_Patient6") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+
+MNP.genes_sc <- ranked.genes.cs %>%
+  dplyr::filter(group == "severe122_Patient6") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+MNP.genes_sm <- ranked.genes.sm %>%
+  dplyr::filter(group == "severe122_Patient6") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+
+MNP.genes_mc <- ranked.genes.cm %>%
+  dplyr::filter(group == "moderate124_Patient6") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
+MNP.genes_ms <- ranked.genes.sm %>%
+  dplyr::filter(group == "moderate124_Patient6") %>%
+  arrange(-rank) %>% 
+  dplyr::select(feature, rank)
 
 
-rm(list=setdiff(ls(), "BCR"))
+#Converting matrices to tables:
+ranks_cs <- deframe(MNP.genes_cs)
+ranks_cm <- deframe(MNP.genes_cm)
+ranks_sc <- deframe(MNP.genes_sc)
+ranks_sm <- deframe(MNP.genes_sm)
+ranks_mc <- deframe(MNP.genes_mc)
+ranks_ms <- deframe(MNP.genes_ms)
+
+#Running fgsea based on gene set ranking (stats = ranks):
+fgseaRes_cs6 <- fgseaMultilevel(fgsea_sets, stats = ranks_cs, nPermSimple = 1000, 
+                              maxSize = 200) %>% arrange(padj)
+fgseaRes_cm6 <- fgseaMultilevel(fgsea_sets, stats = ranks_cm, nPermSimple = 1000, 
+                              maxSize = 200) %>% arrange(padj)
+fgseaRes_sc6 <- fgseaMultilevel(fgsea_sets, stats = ranks_sc, nPermSimple = 1000, 
+                              maxSize = 200) %>% arrange(padj)
+fgseaRes_sm6 <- fgseaMultilevel(fgsea_sets, stats = ranks_sm, nPermSimple = 1000, 
+                              maxSize = 200) %>% arrange(padj)
+fgseaRes_mc6 <- fgseaMultilevel(fgsea_sets, stats = ranks_mc, nPermSimple = 1000, 
+                              maxSize = 200) %>% arrange(padj)
+fgseaRes_ms6 <- fgseaMultilevel(fgsea_sets, stats = ranks_ms, nPermSimple = 1000, 
+                              maxSize = 200) %>% arrange(padj)
+
+
+fgseaRes_cs6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_cs$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_cm6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_cm$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_sc6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_sc$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_sm6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_sm$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_mc6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_mc$pathway) |> gsub(pattern = "_", replacement = " ")
+fgseaRes_ms6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_ms$pathway) |> gsub(pattern = "_", replacement = " ")
+
+names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
+
+#Enrichment plots:
+ggsave(filename = "graphs/enrichment-plot-pt6-critical-severe.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_cs, desc(NES))[1]$pathway]],
+                             ranks_cs) + 
+         labs(title = arrange(fgseaRes_cs, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+ggsave(filename = "graphs/enrichment-plot-pt6-critical-moderate.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_cm, desc(NES))[1]$pathway]],
+                             ranks_cm) + 
+         labs(title = arrange(fgseaRes_cm, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = "graphs/enrichment-plot-pt6-severe-critical.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_sc, desc(NES))[1]$pathway]],
+                             ranks_sc) + 
+         labs(title = arrange(fgseaRes_sc, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+ggsave(filename = "graphs/enrichment-plot-pt6-severe-moderate.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_sm, desc(NES))[1]$pathway]],
+                             ranks_sm) + 
+         labs(title = arrange(fgseaRes_sm, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+ggsave(filename = "graphs/enrichment-plot-pt6-moderate-critical.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_mc, desc(NES))[1]$pathway]],
+                             ranks_mc) + 
+         labs(title = arrange(fgseaRes_mc, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+ggsave(filename = "graphs/enrichment-plot-pt6-moderate-severe.tiff", 
+       dpi = 300, width = 10, height = 5, units = "in",
+       plot = plotEnrichment(fgsea_sets[[arrange(fgseaRes_ms, desc(NES))[1]$pathway]],
+                             ranks_ms) + 
+         labs(title = arrange(fgseaRes_ms, desc(NES))[1]$pathway) +
+         xlab("Rank") + ylab("Enrichment Score") +
+         theme(text = element_text(size = 12), axis.text = element_text(size = 12)) +
+         theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+
+
+#Plotting pathways:
+fgseaRes_cs6$adjPvalue <- ifelse(fgseaRes_cs6$padj <= 0.05, "significant", "non-significant")
+cols <- c("significant" = "red") #"non-significant" = "grey", 
+plot_cs <- ggplot(fgseaRes_cs6, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 6 - critical vs severe") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt6-critical-vs-severe-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_cs)
+
+
+fgseaRes_cm6$adjPvalue <- ifelse(fgseaRes_cm6$padj <= 0.05, "significant", "non-significant")
+plot_cm <- ggplot(fgseaRes_cm6, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 6 - critical vs moderate") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt6-critical-vs-moderate-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_cm)
+
+fgseaRes_sc6$adjPvalue <- ifelse(fgseaRes_sc6$padj <= 0.05, "significant", "non-significant")
+plot_sc <- ggplot(fgseaRes_sc6, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 6 - severe vs critical") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt6-severe-vs-critical-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_sc)
+
+fgseaRes_sm6$adjPvalue <- ifelse(fgseaRes_sm6$padj <= 0.05, "significant", "non-significant")
+plot_sm <- ggplot(fgseaRes_sm6, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 6 - severe vs moderate") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt6-severe-vs-moderate-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_sm)
+
+
+
+fgseaRes_mc6$adjPvalue <- ifelse(fgseaRes_mc6$padj <= 0.05, "significant", "non-significant")
+plot_mc <- ggplot(fgseaRes_mc6, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 6 - moderate vs critical") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt6-moderatee-vs-critical-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_mc)
+
+fgseaRes_ms6$adjPvalue <- ifelse(fgseaRes_ms6$padj <= 0.05, "significant", "non-significant")
+plot_ms <- ggplot(fgseaRes_ms6, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+  geom_col() +
+  scale_fill_manual(values = cols) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title = "Patient 6 - moderate vs severe") + 
+  theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5, size = 14),
+        axis.title = element_text(size = 10),
+        legend.position='right', legend.key.size = unit(0.25, 'cm'),
+        legend.key.height = unit(0.25, 'cm'),
+        legend.key.width = unit(0.25, 'cm'), 
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10)) 
+ggsave(filename = "graphs/gsea-pt6-moderatee-vs-severe-top.tiff",
+       width = 10, height = 10, dpi = 300, units = "in", plot = plot_ms)
+
+
+
+
+
+all6c <- data.frame(patient = "Patient 6", severity = "critical", progress = "recovering", outcome = "survived", pathway = fgseaRes_cm6$pathway, size = fgseaRes_cm6$size,
+                    NES = fgseaRes_cm6$NES, padj = fgseaRes_cm6$padj) %>% arrange(desc(NES))
+all6m <- data.frame(patient = "Patient 6", severity = "moderate", progress = "recovering", outcome = "survived", pathway = fgseaRes_mc6$pathway, size = fgseaRes_mc6$size,
+                    NES = fgseaRes_mc6$NES, padj = fgseaRes_mc6$padj) %>% arrange(desc(NES))
+
+
+allc <- rbind(allc, first(all6c, 5), last(all6c, 5))
+allm <- rbind(allm, first(all6m, 5), last(all6m, 5))
+
+write.table(x = allc, file = "allc.tsv", col.names = NA, sep = "\t")
+write.table(x = allm, file = "allm.tsv", col.names = NA, sep = "\t")
+
+rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 gc()
+
+allc$outcome[allc$patient == "Patient 4" | allc$patient == "Patient 5" | allc$patient == "Patient 6"] <- "recovered"
+allm$outcome[allm$patient == "Patient 4" | allm$patient == "Patient 5" | allm$patient == "Patient 6"] <- "recovered"
+
+#Plotting all:
+
+ggsave(filename = "all-pathways-moderate.tiff",
+       path = "graphs/",
+       dpi = "print", width = 15, height = 10,
+       plot = ggplot(transform(allm),
+                     aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
+         geom_point(alpha=0.5) +
+         #facet_wrap(~patient, ncol = 3) +
+         #facet_grid(vars(severity), vars(TRBV)) +
+         #facet_grid(~TRBV + severity) +
+         #labs(title = "Enriched Pathways", vjust = 1) +
+         theme(plot.subtitle=element_text(size=12, face="italic", color="black")) +
+         theme(axis.text=element_text(size=8),
+               axis.title=element_text(size=10)) +
+         ylab("pathways") +
+         geom_vline(xintercept = 0, linetype="dotted") +
+         scale_size(range = c(3, 8), name="genes") +
+         #scale_fill_viridis(discrete=TRUE, guide="none", option="A") +
+         theme_bw()
+)
+
+ggsave(filename = "all-pathways-critical.tiff",
+       path = "graphs/",
+       dpi = "print", width = 15, height = 10,
+       plot = ggplot(transform(allc),
+                     aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
+         geom_point(alpha=0.5) +
+         #facet_wrap(~patient, ncol = 3) +
+         #facet_grid(vars(severity), vars(TRBV)) +
+         #facet_grid(~TRBV + severity) +
+         #labs(title = "Enriched Pathways", vjust = 1) +
+         theme(plot.subtitle=element_text(size=12, face="italic", color="black")) +
+         theme(axis.text=element_text(size=8),
+               axis.title=element_text(size=10)) +
+         ylab("pathways") +
+         geom_vline(xintercept = 0, linetype="dotted") +
+         scale_size(range = c(3, 8), name="genes") +
+         #scale_fill_viridis(discrete=TRUE, guide="none", option="A") +
+         theme_bw()
+)
+
 
 #Patient 1 vs. all:
 DefaultAssay(BCR) <- "RNA"
