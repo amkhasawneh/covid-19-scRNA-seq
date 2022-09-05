@@ -934,12 +934,17 @@ isotypes.covid <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity != "healthy",]
 
 #Isotype diversity, using the Shannon index:
 c.diversity <- data.frame()
-for (i in levels(BCR$sample)) {
-  c.div <- c(i, diversity(BCR[,BCR$sample == i]$c_gene %>% table), levels(factor(BCR$outcome[BCR$sample == i])),
-             levels(factor(BCR$severity[BCR$sample == i])))
+for (i in levels(factor(BCR$patient))) {
+  for (j in levels(factor(BCR$severity[BCR$patient == i]))) {
+    c.div <- c(i, levels(factor(BCR$severity[BCR$patient == i & BCR$severity == j])),
+               diversity(BCR[,BCR$patient == i & BCR$severity == j]$c_gene %>% table), 
+             levels(factor(BCR$outcome[BCR$patient == i & BCR$severity == j])))
   c.diversity <- rbind(c.diversity, c.div)
-  rownames(c.diversity) <- c.diversity[,1]
-  colnames(c.diversity) <- c("sample", "Shannon.score", "outcome", "severity")
+  rownames(c.diversity) <- paste0(c.diversity[,1], " ", c.diversity[,2])
+  colnames(c.diversity) <- c("patient", "severity", "Shannon.score", "outcome")
+  c.diversity$sample <- rownames(c.diversity)
+  }
+  
 }
 #Comparing diversity between outcome groups:
 #Recovered vs. Healthy (p-value = 0.01212):
@@ -999,13 +1004,24 @@ for (i in levels(factor(sequences$folder))) {
       df <- data.frame(cell = sequences[sequences$folder == i,][j,]$cell,
                       sample = as.character(sequences[sequences$folder == i,][j,]$sample),
                       cdr3 = sequences[sequences$folder == i,][j,]$cdr3,
-      hv3 = sequences[sequences$folder == i,][j,]$hv3,
-      hv2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2),
       hv1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr1),
+      hv2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2),
+      hv3 = sequences[sequences$folder == i,][j,]$hv3,
       
-      lt3 = sequences[sequences$folder == i,][j,]$lt3,
-      lt2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2),
+      fwrh1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$fwr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$fwr1),
+      fwrh2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$fwr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$fwr2),
+      fwrh3 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$fwr3)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$fwr3),
+      fwrh4 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$fwr4)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$fwr4),
+      
+      fwrl1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$fwr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$fwr1),
+      fwrl2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$fwr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$fwr2),
+      fwrl3 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$fwr3)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$fwr3),
+      fwrl4 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$fwr4)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$fwr4),
+      
       lt1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr1),
+      lt2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2),
+      lt3 = sequences[sequences$folder == i,][j,]$lt3,
+      
       HV = sequences[sequences$folder == i,][j,]$v_gene, HJ = sequences[sequences$folder == i,][j,]$j_gene, Ig = sequences[sequences$folder == i,][j,]$c_gene, 
       LV = sequences[sequences$folder == i,][j,]$lkv_gene, LJ = sequences[sequences$folder == i,][j,]$lkj_gene, LC = sequences[sequences$folder == i,][j,]$lkc_gene
       
@@ -1049,3 +1065,9 @@ CDRabundanceVDJ <- CDR123 %>%
   group_by(cdr3, hv3, hv2, hv1, lt3, lt2, lt1, sample, HV, HJ, Ig, LV, LJ, LC) %>% 
   count() %>% arrange(desc(n))
 write.table(CDRabundanceIsotype, "cdr-aa-sequences-by-sample-heavy-light.tsv", sep = "\t", col.names = NA)
+
+#Again, only this time, including all V(D)J genes and all fwrs of both chains:
+CDRabundanceFWR <- CDR123 %>%
+  group_by(sample, fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, cdr3, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4, HV, HJ, Ig, LV, LJ, LC) %>% 
+  count() %>% arrange(desc(n))
+write.table(CDRabundanceFWR, "cdr-aa-sequences-by-sample-heavy-light-fwr.tsv", sep = "\t", col.names = NA)

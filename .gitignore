@@ -15,7 +15,7 @@ reated by https://www.toptal.com/developers/gitignore/api/r
 *.tsv
 from_cellranger/
 ~*/
-
+ncbi*/
 # User-specific files
 .Ruserdata
 
