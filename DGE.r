@@ -22,6 +22,7 @@ m_df <- msigdbr(species = "Homo sapiens", category = "H")
 
 #Preparing a list of the gene sets, for fgsea:
 fgsea_sets <- m_df %>% split(x = .$gene_symbol, f = .$gs_name)
+names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
 
 
 colorblind_vector <- colorRampPalette(rev(c("#0D0887FF", "#47039FFF", 
@@ -1203,11 +1204,10 @@ ranks_m <- deframe(MNP.genes_m1)
 #Running fgsea based on gene set ranking (stats = ranks):
 fgseaRes_c1 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
                                maxSize = 200) %>% arrange(padj)
-fgseaRes_m1 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+fgseaRes_m1 <- fgseaMultilevel(fgsea_sets, stats = ranks_m, nPermSimple = 1000, 
                                maxSize = 200) %>% arrange(padj)
 
 
-names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
 
 #Enrichment plots:
 ggsave(filename = "graphs/enrichment-plot-pt1-critical-moderate.tiff", 
@@ -1252,14 +1252,14 @@ ggsave(filename = "graphs/gsea-pt1-critical-vs-moderate-top.tiff",
        width = 10, height = 10, dpi = 300, units = "in", plot = plot_c1)
 
 all1c <- data.frame(patient = "Patient 1", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c1$pathway, size = fgseaRes_c1$size,
-                  NES = fgseaRes_c1$NES, padj = fgseaRes_c1$padj) %>% arrange(desc(NES))
+                  NES = fgseaRes_c1$NES, padj = fgseaRes_c1$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 all1m <- data.frame(patient = "Patient 1", severity = "moderate", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m1$pathway, size = fgseaRes_m1$size,
-                  NES = fgseaRes_m1$NES, padj = fgseaRes_m1$padj) %>% arrange(desc(NES))
+                  NES = fgseaRes_m1$NES, padj = fgseaRes_m1$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 allc <- NULL
 allm <- NULL
-allc <- rbind(allc, first(all1c, 5), last(all1c, 5))
-allm <- rbind(allm, first(all1m, 5), last(all1m, 5))
+allc <- rbind(allc, first(all1c[all1c$NES > 0,], 5), last(all1c[all1c$NES < 0,], 5))
+allm <- rbind(allm, first(all1m[all1m$NES > 0,], 5), last(all1m[all1m$NES < 0,], 5))
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -1378,11 +1378,10 @@ ranks_m <- deframe(MNP.genes_m2)
 #Running fgsea based on gene set ranking (stats = ranks):
 fgseaRes_c2 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
                                maxSize = 200) %>% arrange(padj)
-fgseaRes_m2 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+fgseaRes_m2 <- fgseaMultilevel(fgsea_sets, stats = ranks_m, nPermSimple = 1000, 
                                maxSize = 200) %>% arrange(padj)
 
 
-names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
 
 #Enrichment plots:
 ggsave(filename = "graphs/enrichment-plot-pt2-critical-moderate.tiff", 
@@ -1427,13 +1426,13 @@ ggsave(filename = "graphs/gsea-pt2-critical-vs-moderate-top.tiff",
        width = 10, height = 10, dpi = 300, units = "in", plot = plot_c2)
 
 all2c <- data.frame(patient = "Patient 2", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c2$pathway, size = fgseaRes_c2$size,
-                    NES = fgseaRes_c2$NES, padj = fgseaRes_c2$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_c2$NES, padj = fgseaRes_c2$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 all2m <- data.frame(patient = "Patient 2", severity = "moderate", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m2$pathway, size = fgseaRes_m2$size,
-                    NES = fgseaRes_m2$NES, padj = fgseaRes_m2$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_m2$NES, padj = fgseaRes_m2$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 
-allc <- rbind(allc, first(all2c, 5), last(all2c, 5))
-allm <- rbind(allm, first(all2m, 5), last(all2m, 5))
+allc <- rbind(allc, first(all2c[all2c$NES > 0,], 5), last(all2c[all2c$NES < 0,], 5))
+allm <- rbind(allm, first(all2m[all2m$NES > 0,], 5), last(all2m[all2m$NES < 0,], 5))
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -1551,11 +1550,9 @@ ranks_m <- deframe(MNP.genes_m3)
 #Running fgsea based on gene set ranking (stats = ranks):
 fgseaRes_c3 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
                                maxSize = 200) %>% arrange(padj)
-fgseaRes_m3 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+fgseaRes_m3 <- fgseaMultilevel(fgsea_sets, stats = ranks_m, nPermSimple = 1000, 
                                maxSize = 200) %>% arrange(padj)
 
-
-names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
 
 #Enrichment plots:
 ggsave(filename = "graphs/enrichment-plot-pt3-critical-mild.tiff", 
@@ -1601,13 +1598,13 @@ ggsave(filename = "graphs/gsea-pt3-critical-vs-mild-top.tiff",
 
 
 all3c <- data.frame(patient = "Patient 3", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c3$pathway, size = fgseaRes_c3$size,
-                    NES = fgseaRes_c3$NES, padj = fgseaRes_c3$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_c3$NES, padj = fgseaRes_c3$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 all3m <- data.frame(patient = "Patient 3", severity = "mild", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m3$pathway, size = fgseaRes_m3$size,
-                    NES = fgseaRes_m3$NES, padj = fgseaRes_m3$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_m3$NES, padj = fgseaRes_m3$padj) %>% filter(padj < 0.05)%>% arrange(desc(NES))
 
 
-allc <- rbind(allc, first(all3c, 5), last(all3c, 5))
-allm <- rbind(allm, first(all3m, 5), last(all3m, 5))
+allc <- rbind(allc, first(all3c[all3c$NES > 0,], 5), last(all3c[all3c$NES < 0,], 5))
+allm <- rbind(allm, first(all3m[all3m$NES > 0,], 5), last(all3m[all3m$NES < 0,], 5))
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -1726,11 +1723,10 @@ ranks_m <- deframe(MNP.genes_m)
 #Running fgsea based on gene set ranking (stats = ranks):
 fgseaRes_c4 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
                                 maxSize = 200) %>% arrange(padj)
-fgseaRes_m4 <- fgseaMultilevel(fgsea_sets, stats = ranks_c, nPermSimple = 1000, 
+fgseaRes_m4 <- fgseaMultilevel(fgsea_sets, stats = ranks_m, nPermSimple = 1000, 
                                 maxSize = 200) %>% arrange(padj)
 
 
-names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
 
 #Enrichment plots:
 ggsave(filename = "graphs/enrichment-plot-pt4-critical-mild.tiff", 
@@ -1776,13 +1772,13 @@ ggsave(filename = "graphs/gsea-pt4-critical-vs-mild-top.tiff",
 
 
 all4c <- data.frame(patient = "Patient 4", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c4$pathway, size = fgseaRes_c4$size,
-                    NES = fgseaRes_c4$NES, padj = fgseaRes_c4$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_c4$NES, padj = fgseaRes_c4$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 all4m <- data.frame(patient = "Patient 4", severity = "mild", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m4$pathway, size = fgseaRes_m4$size,
-                    NES = fgseaRes_m4$NES, padj = fgseaRes_m4$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_m4$NES, padj = fgseaRes_m4$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 
-allc <- rbind(allc, first(all4c, 5), last(all4c, 5))
-allm <- rbind(allm, first(all4m, 5), last(all4m, 5))
+allc <- rbind(allc, first(all4c[all4c$NES > 0,], 5), last(all4c[all4c$NES < 0,], 5))
+allm <- rbind(allm, first(all4m[all4m$NES > 0,], 5), last(all4m[all4m$NES < 0,], 5))
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -2016,15 +2012,6 @@ fgseaRes_ms5 <- fgseaMultilevel(fgsea_sets, stats = ranks_ms, nPermSimple = 1000
                                maxSize = 200) %>% arrange(padj)
 
 
-fgseaRes_cs$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_cs$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_cm$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_cm$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_sc$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_sc$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_sm$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_sm$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_mc$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_mc$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_ms$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_ms$pathway) |> gsub(pattern = "_", replacement = " ")
-
-names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
-
 #Enrichment plots:
 ggsave(filename = "graphs/enrichment-plot-pt5-critical-severe.tiff", 
        dpi = 300, width = 10, height = 5, units = "in",
@@ -2203,13 +2190,13 @@ ggsave(filename = "graphs/gsea-pt5-moderatee-vs-severe-top.tiff",
 
 
 all5c <- data.frame(patient = "Patient 5", severity = "critical", progress = "recovering", outcome = "deceased", pathway = fgseaRes_cm5$pathway, size = fgseaRes_cm5$size,
-                    NES = fgseaRes_cm5$NES, padj = fgseaRes_cm5$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_cm5$NES, padj = fgseaRes_cm5$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 all5m <- data.frame(patient = "Patient 5", severity = "moderate", progress = "recovering", outcome = "deceased", pathway = fgseaRes_mc5$pathway, size = fgseaRes_mc5$size,
-                    NES = fgseaRes_mc5$NES, padj = fgseaRes_mc5$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_mc5$NES, padj = fgseaRes_mc5$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 
-allc <- rbind(allc, first(all5c, 5), last(all5c, 5))
-allm <- rbind(allm, first(all5m, 5), last(all5m, 5))
+allc <- rbind(allc, first(all5c[all5c$NES > 0,], 5), last(all5c[all5c$NES < 0,], 5))
+allm <- rbind(allm, first(all5m[all5m$NES > 0,], 5), last(all5m[all5m$NES < 0,], 5))
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -2451,15 +2438,6 @@ fgseaRes_ms6 <- fgseaMultilevel(fgsea_sets, stats = ranks_ms, nPermSimple = 1000
                               maxSize = 200) %>% arrange(padj)
 
 
-fgseaRes_cs6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_cs$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_cm6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_cm$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_sc6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_sc$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_sm6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_sm$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_mc6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_mc$pathway) |> gsub(pattern = "_", replacement = " ")
-fgseaRes_ms6$pathway <- gsub(pattern = "HALLMARK_", replacement = "", x = fgseaRes_ms$pathway) |> gsub(pattern = "_", replacement = " ")
-
-names(fgsea_sets) <- gsub(pattern = "HALLMARK_", replacement = "", x = names(fgsea_sets)) |> gsub(pattern = "_", replacement = " ")
-
 #Enrichment plots:
 ggsave(filename = "graphs/enrichment-plot-pt6-critical-severe.tiff", 
        dpi = 300, width = 10, height = 5, units = "in",
@@ -2638,13 +2616,13 @@ ggsave(filename = "graphs/gsea-pt6-moderatee-vs-severe-top.tiff",
 
 
 all6c <- data.frame(patient = "Patient 6", severity = "critical", progress = "recovering", outcome = "survived", pathway = fgseaRes_cm6$pathway, size = fgseaRes_cm6$size,
-                    NES = fgseaRes_cm6$NES, padj = fgseaRes_cm6$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_cm6$NES, padj = fgseaRes_cm6$padj) %>% arrange(desc(NES)) %>% filter(padj < 0.05)
 all6m <- data.frame(patient = "Patient 6", severity = "moderate", progress = "recovering", outcome = "survived", pathway = fgseaRes_mc6$pathway, size = fgseaRes_mc6$size,
-                    NES = fgseaRes_mc6$NES, padj = fgseaRes_mc6$padj) %>% arrange(desc(NES))
+                    NES = fgseaRes_mc6$NES, padj = fgseaRes_mc6$padj) %>% arrange(desc(NES)) %>% filter(padj < 0.05)
 
 
-allc <- rbind(allc, first(all6c, 5), last(all6c, 5))
-allm <- rbind(allm, first(all6m, 5), last(all6m, 5))
+allc <- rbind(allc, first(all6c[all6c$NES > 0,], 5), last(all6c[all6c$NES < 0,], 5))
+allm <- rbind(allm, first(all6m[all6m$NES > 0,], 5), last(all6m[all6m$NES < 0,], 5))
 
 write.table(x = allc, file = "allc.tsv", col.names = NA, sep = "\t")
 write.table(x = allm, file = "allm.tsv", col.names = NA, sep = "\t")
@@ -2653,7 +2631,6 @@ rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 gc()
 
 allc$outcome[allc$patient == "Patient 4" | allc$patient == "Patient 5" | allc$patient == "Patient 6"] <- "recovered"
-allm$outcome[allm$patient == "Patient 4" | allm$patient == "Patient 5" | allm$patient == "Patient 6"] <- "recovered"
 
 #Plotting all:
 
