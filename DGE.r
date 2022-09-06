@@ -4160,8 +4160,8 @@ crit <- BCR[,BCR$severity == "critical"]
 crit$sample <- droplevels(crit$sample)
 
 for (s in c(mod, crit)) {
-  for (i in c("Patient 1", "Patient 2", "Patient 3")) {
-    for (j in c("Patient 4", "Patient 5", "Patient 6")) {
+  for (i in c("Patient 1", "Patient 2", "Patient 3", "Patient 4")) {
+    for (j in c("Patient 5", "Patient 6")) {
     #Wilcoxon test:
     wlx.mrk <- wilcoxauc(s, 'patient', c(i, j),
                          seurat_assay='RNA', assay = "data") %>%
@@ -4215,12 +4215,12 @@ for (s in c(mod, crit)) {
             legend.key.width = unit(0.25, 'cm'), 
             legend.title = element_text(size=10),
             legend.text = element_text(size=10)) 
-    ggsave(path =  "graphs/", filename = paste0(i, "-vs-", j, "-pathways-", ifelse(levels(factor(s$severity))[1] == "critical", "critical", "moderate"), ".tiff"),
+    ggsave(path =  "graphs/", filename = paste0(i, "-vs-", j, "-pathways-", ifelse(levels(factor(s$severity))[1] == "critical", "critical", "moderate"), "-progress.tiff"),
            width = 10, height = 10, dpi = 300, units = "in", plot = plot_d)
     
     #Saving a table of the results:
     write.table(x = fgseaRes_d %>% mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L))),
-                file = paste0(i, "-vs-", j, "-pathways-", ifelse(levels(factor(s$severity))[1] == "critical", "critical", "moderate"), ".tsv"),
+                file = paste0(i, "-vs-", j, "-pathways-", ifelse(levels(factor(s$severity))[1] == "critical", "critical", "moderate"), "-progress.tsv"),
                 sep = "\t", col.names = NA)
    
     
