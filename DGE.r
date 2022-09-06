@@ -1771,9 +1771,9 @@ ggsave(filename = "graphs/gsea-pt4-critical-vs-mild-top.tiff",
        width = 10, height = 10, dpi = 300, units = "in", plot = plot_c4)
 
 
-all4c <- data.frame(patient = "Patient 4", severity = "critical", progress = "progressing", outcome = "deceased", pathway = fgseaRes_c4$pathway, size = fgseaRes_c4$size,
+all4c <- data.frame(patient = "Patient 4", severity = "critical", progress = "progressing", outcome = "survived", pathway = fgseaRes_c4$pathway, size = fgseaRes_c4$size,
                     NES = fgseaRes_c4$NES, padj = fgseaRes_c4$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
-all4m <- data.frame(patient = "Patient 4", severity = "mild", progress = "progressing", outcome = "deceased", pathway = fgseaRes_m4$pathway, size = fgseaRes_m4$size,
+all4m <- data.frame(patient = "Patient 4", severity = "mild", progress = "progressing", outcome = "survived", pathway = fgseaRes_m4$pathway, size = fgseaRes_m4$size,
                     NES = fgseaRes_m4$NES, padj = fgseaRes_m4$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 
@@ -2189,9 +2189,9 @@ ggsave(filename = "graphs/gsea-pt5-moderatee-vs-severe-top.tiff",
 
 
 
-all5c <- data.frame(patient = "Patient 5", severity = "critical", progress = "recovering", outcome = "deceased", pathway = fgseaRes_cm5$pathway, size = fgseaRes_cm5$size,
+all5c <- data.frame(patient = "Patient 5", severity = "critical", progress = "recovering", outcome = "survived", pathway = fgseaRes_cm5$pathway, size = fgseaRes_cm5$size,
                     NES = fgseaRes_cm5$NES, padj = fgseaRes_cm5$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
-all5m <- data.frame(patient = "Patient 5", severity = "moderate", progress = "recovering", outcome = "deceased", pathway = fgseaRes_mc5$pathway, size = fgseaRes_mc5$size,
+all5m <- data.frame(patient = "Patient 5", severity = "moderate", progress = "recovering", outcome = "survived", pathway = fgseaRes_mc5$pathway, size = fgseaRes_mc5$size,
                     NES = fgseaRes_mc5$NES, padj = fgseaRes_mc5$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 
@@ -2630,14 +2630,13 @@ write.table(x = allm, file = "allm.tsv", col.names = NA, sep = "\t")
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 gc()
 
-allc$outcome[allc$patient == "Patient 4" | allc$patient == "Patient 5" | allc$patient == "Patient 6"] <- "recovered"
 
 #Plotting all:
 
 ggsave(filename = "all-pathways-moderate.tiff",
        path = "graphs/",
        dpi = "print", width = 15, height = 10,
-       plot = ggplot(transform(allm),
+       plot = ggplot(allm,
                      aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
          geom_point(alpha=0.5) +
          #facet_wrap(~patient, ncol = 3) +
@@ -2657,7 +2656,7 @@ ggsave(filename = "all-pathways-moderate.tiff",
 ggsave(filename = "all-pathways-critical.tiff",
        path = "graphs/",
        dpi = "print", width = 15, height = 10,
-       plot = ggplot(transform(allc),
+       plot = ggplot(allc,
                      aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
          geom_point(alpha=0.5) +
          #facet_wrap(~patient, ncol = 3) +
@@ -4145,6 +4144,90 @@ tiff("./graphs/hm-critical-moderate-b-cells-isg-in-deg-pt5-6.tiff",
      res = 300, width = 4, height = 8, units = "in")
 draw(hm.list)
 dev.off()
+
+
+
+
+
+################################Outcome Comparison#############################
+
+#Comparing each of the first 4 to the last 2:
+
+#Subsetting to moderate/mild and critical patients:
+mod <- BCR[,BCR$severity == "moderate" | BCR$severity == "mild"]
+mod$sample <- droplevels(mod$sample)
+crit <- BCR[,BCR$severity == "critical"]
+crit$sample <- droplevels(crit$sample)
+
+for (s in c(mod, crit)) {
+  for (i in c("Patient 1", "Patient 2", "Patient 3")) {
+    for (j in c("Patient 4", "Patient 5", "Patient 6")) {
+    #Wilcoxon test:
+    wlx.mrk <- wilcoxauc(s, 'patient', c(i, j),
+                         seurat_assay='RNA', assay = "data") %>%
+      subset(padj < 0.05) %>% arrange(padj)
+    
+    #Ranking genes using rrho algorithm
+    ranked.genes <- wlx.mrk %>%
+      mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
+      arrange(-rank)      
+    
+    
+    #Selecting only the feature and rank columns of DGE data for fgsea run:
+    MNP.genes.ded <- ranked.genes %>%
+      dplyr::filter(group == i) %>%
+      arrange(-rank) %>% 
+      dplyr::select(feature, rank)
+    
+    MNP.genes.srv <- ranked.genes %>%
+      dplyr::filter(group == j) %>%
+      arrange(-rank) %>% 
+      dplyr::select(feature, rank)
+    
+    
+    #Converting matrices to tables:
+    ranks_d <- deframe(MNP.genes.ded)
+    ranks_s <- deframe(MNP.genes.srv)
+    
+    #Running fgsea based on gene set ranking (stats = ranks):
+    fgseaRes_d <- fgseaMultilevel(fgsea_sets, stats = ranks_d, nPermSimple = 1000, 
+                                   maxSize = 200) %>% arrange(padj)
+    fgseaRes_s <- fgseaMultilevel(fgsea_sets, stats = ranks_s, nPermSimple = 1000, 
+                                   maxSize = 200) %>% arrange(padj)
+    
+    
+    
+    #Plotting pathways:
+    fgseaRes_d$adjPvalue <- ifelse(fgseaRes_d$padj <= 0.05, "significant", "non-significant")
+    cols <- c("significant" = "red") #"non-significant" = "grey", 
+    plot_d <- ggplot(fgseaRes_d, aes(reorder(pathway, NES), NES, fill = adjPvalue)) +
+      geom_col() +
+      scale_fill_manual(values = cols) +
+      coord_flip() +
+      labs(x="Pathway", y="Normalized Enrichment Score",
+           title = paste0(i, " vs ", j, " - ", ifelse(levels(factor(s$severity))[1] == "critical", "critical", "moderate"))) + 
+      theme(axis.text.x = element_text(vjust = 0.5, size = 10),
+            axis.text.y = element_text(size = 10, vjust = 0.5),
+            plot.title = element_text(hjust = 0.5, size = 14),
+            axis.title = element_text(size = 10),
+            legend.position='right', legend.key.size = unit(0.25, 'cm'),
+            legend.key.height = unit(0.25, 'cm'),
+            legend.key.width = unit(0.25, 'cm'), 
+            legend.title = element_text(size=10),
+            legend.text = element_text(size=10)) 
+    ggsave(path =  "graphs/", filename = paste0(i, "-vs-", j, "-pathways-", ifelse(levels(factor(s$severity))[1] == "critical", "critical", "moderate"), ".tiff"),
+           width = 10, height = 10, dpi = 300, units = "in", plot = plot_d)
+    
+    #Saving a table of the results:
+    write.table(x = fgseaRes_d %>% mutate(leadingEdge = vapply(leadingEdge, paste, collapse = ", ", character(1L))),
+                file = paste0(i, "-vs-", j, "-pathways-", ifelse(levels(factor(s$severity))[1] == "critical", "critical", "moderate"), ".tsv"),
+                sep = "\t", col.names = NA)
+   
+    
+  }
+
+ }
+}
 
 
 
