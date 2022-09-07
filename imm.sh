@@ -12,7 +12,9 @@ for d in *; do
 	#Separating heavy and light chains:
 	ParseDb.py select -d filtered_contig_igblast_db-pass.tsv -f locus -u "IGH" --logic all --regex --outname heavy
 	ParseDb.py select -d filtered_contig_igblast_db-pass.tsv -f locus -u "IG[LK]" --logic all --regex --outname light 
-
+	
+	#Correcting clonal groups:
+	light_cluster.py -d heavy_parse-select.tsv -e light_parse-select.tsv -o 10X_clone-pass.tsv 
 done
 cd $root
 exit 0;
