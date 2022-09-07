@@ -677,11 +677,11 @@ FindMarkers(object = BCR, ident.1 = "IGHV1-18.IGHJ3..IGHA1_IGLV1-47.IGLJ2.IGLC2"
 #V gene diversity, using the Shannon index:
 v.diversity <- data.frame()
 for (i in levels(BCR$sample)) {
-  v.div <- c(i, diversity(table(BCR[,BCR$sample == i]$v_gene)), 
+  v.div <- c(i, levels(factor(BCR$patient[BCR$sample == i])), diversity(table(BCR[,BCR$sample == i]$v_gene)), 
              levels(factor(BCR$outcome[BCR$sample == i])), levels(factor(BCR$severity[BCR$sample == i])))
   v.diversity <- rbind(v.diversity, v.div)
   rownames(v.diversity) <- v.diversity[,1]
-  colnames(v.diversity) <- c("sample", "Shannon.score", "outcome", "severity")
+  colnames(v.diversity) <- c("sample", "patient", "Shannon.score", "outcome", "severity")
 }
 
 #Comparing diversity between outcome groups:
@@ -856,13 +856,13 @@ rm(list=setdiff(ls(), "BCR"))
 
 #Creating an isotype "contingency table":
 isotypes <- BCR@meta.data[!is.na(BCR$c_gene),] %>%
-  group_by(c_gene, sample, outcome) %>% count() %>%
+  group_by(c_gene, patient, severity, outcome) %>% count() %>%
   arrange(desc(n)) %>% as.data.frame()
 isotypes <-  isotypes %>% spread(key = c_gene, value = n)
 isotypes[is.na(isotypes)] <- 0
 rownames(isotypes) <- isotypes$sample
 isotypes$sample <- NULL
-isotypes[,-c(1)] <- (isotypes[,-c(1)] / rowSums(isotypes[,-c(1)])) * 100
+isotypes[,-c(1,2,3)] <- (isotypes[,-c(1,2,3)] / rowSums(isotypes[,-c(1,2,3)])) * 100
 
 #Comparing the different outcome groups' usage of IGHM:
 #Recovered vs. Healthy (p-value = 0.02424):
@@ -1069,5 +1069,8 @@ write.table(CDRabundanceIsotype, "cdr-aa-sequences-by-sample-heavy-light.tsv", s
 #Again, only this time, including all V(D)J genes and all fwrs of both chains:
 CDRabundanceFWR <- CDR123 %>%
   group_by(sample, fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, cdr3, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4, HV, HJ, Ig, LV, LJ, LC) %>% 
-  count() %>% arrange(desc(n))
+  count() %>% arrange(desc(n)) %>% 
+  mutate(full = paste0(fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, cdr3, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4),
+         full.length = sapply(full, nchar)) %>%
+  relocate(n, .after = full.length)
 write.table(CDRabundanceFWR, "cdr-aa-sequences-by-sample-heavy-light-fwr.tsv", sep = "\t", col.names = NA)
