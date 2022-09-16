@@ -986,6 +986,7 @@ ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
 
 #First, we need the CTaa fields, which seem to correspond to the CDR3.
 #This I'll use to extract the other two CDR sequences, for each chain.
+BCR <- readRDS("05-BCR-combined.rds")
 
 sequences <- BCR@meta.data %>%
   group_by(CTaa, sample, cell,  v_gene, j_gene, c_gene, lkv_gene, lkj_gene, lkc_gene) %>%
@@ -999,6 +1000,8 @@ CDR123 <- data.frame()
 for (i in levels(factor(sequences$folder))) {
   
     cdr <- read.table(paste0("from_cellranger/", i, "/vdj_b/filtered_contig_annotations.csv"), sep = ",", header = T)
+    airr <- read.table(paste0("from_cellranger/", i, "/vdj_b/airr_rearrangement.tsv"), sep = "\t", header = T)
+    
   
     for (j in 1:nrow(sequences[sequences$folder == i,])) {
       df <- data.frame(cell = sequences[sequences$folder == i,][j,]$cell,
@@ -1041,7 +1044,20 @@ for (i in levels(factor(sequences$folder))) {
       lt3_nt = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & (cdr$chain == "IGL" | cdr$chain == "IGK"),]$cdr3_nt),
       
       HV = sequences[sequences$folder == i,][j,]$v_gene, HJ = sequences[sequences$folder == i,][j,]$j_gene, Ig = sequences[sequences$folder == i,][j,]$c_gene, 
-      LV = sequences[sequences$folder == i,][j,]$lkv_gene, LJ = sequences[sequences$folder == i,][j,]$lkj_gene, LC = sequences[sequences$folder == i,][j,]$lkc_gene
+      LV = sequences[sequences$folder == i,][j,]$lkv_gene, LJ = sequences[sequences$folder == i,][j,]$lkj_gene, LC = sequences[sequences$folder == i,][j,]$lkc_gene,
+      
+     
+      constant_lt_nt = ifelse(length(airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(L)|(K)"),]$sequence_aa)==0,NA_character_, substr(x = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(L)|(K)"),]$sequence, 
+                                                                                                                                                                                                                           start = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(L)|(K)"),]$c_sequence_start,
+                                                                                                                                                                                                                           stop = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(L)|(K)"),]$c_sequence_end)),
+      
+     
+      constant_hv_nt = ifelse(length(airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$sequence_aa)==0,NA_character_, substr(x = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$sequence, 
+                                                                                                                                                                                                                           start = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$c_sequence_start,
+                                                                                                                                                                                                                           stop = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$c_sequence_end))
+      
+      
+      
       
     )
      CDR123 <- rbind(CDR123, df)
@@ -1084,13 +1100,19 @@ CDRabundanceVDJ <- CDR123 %>%
   count() %>% arrange(desc(n))
 write.table(CDRabundanceIsotype, "cdr-aa-sequences-by-sample-heavy-light.tsv", sep = "\t", col.names = NA)
 
-#Again, only this time, including all V(D)J genes and all fwrs of both chains:
+#Again, only this time, including all V(D)J genes and all fwrs of both chains, and constant regions:
 CDRabundanceFWR <- CDR123 %>%
-  group_by(sample, fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, cdr3, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4, 
-           fwrh1_nt, hv1_nt, fwrh2_nt, hv2_nt, fwrh3_nt, hv3_nt, fwrh4_nt, fwrl1_nt, lt1_nt, fwrl2_nt, lt2_nt, fwrl3_nt, lt3_nt, fwrl4_nt,
+  group_by(sample, fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, cdr3, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4,
+           fwrh1_nt, hv1_nt, fwrh2_nt, hv2_nt, fwrh3_nt, hv3_nt, fwrh4_nt, constant_hv_nt, 
+           fwrl1_nt, lt1_nt, fwrl2_nt, lt2_nt, fwrl3_nt, lt3_nt, fwrl4_nt, constant_lt_nt,
            HV, HJ, Ig, LV, LJ, LC) %>% 
   count() %>% arrange(desc(n)) %>% 
-  mutate(full = paste0(fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, cdr3, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4),
-         full.length = sapply(full, nchar)) %>%
-  relocate(n, .after = full.length)
-write.table(CDRabundanceFWR, "cdr-aa-sequences-by-sample-heavy-light-fwr-nt.tsv", sep = "\t", col.names = NA)
+  mutate(full = paste0(fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4),
+         full.length = sapply(full, nchar),
+         full_nt = paste0(fwrh1_nt, hv1_nt, fwrh2_nt, hv2_nt, fwrh3_nt, hv3_nt, fwrh4_nt, constant_hv_nt, fwrl1_nt, lt1_nt, fwrl2_nt, lt2_nt, fwrl3_nt, lt3_nt, fwrl4_nt, constant_lt_nt),
+         full_nt.length = sapply(full_nt, nchar),
+         ) %>%
+  relocate(n, .after = full_nt.length)
+write.table(CDRabundanceFWR, "cdr-aa-sequences-by-sample-heavy-light-fwr-nt-constant.tsv", sep = "\t", col.names = NA)
+
+  
