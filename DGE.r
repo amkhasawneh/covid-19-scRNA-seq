@@ -13,6 +13,7 @@ library(DOSE)
 library(clusterProfiler)
 library(circlize)
 library(ComplexHeatmap)
+library(ggpubr)
 
 BCR <- readRDS("05-BCR-combined.rds")
 
@@ -1084,7 +1085,15 @@ ggsave(filename = "graphs/enrichment-v-1-18-pt1-wlx-crit.jpeg", dpi = "print",
 
 BCR <- readRDS("05-BCR-combined.rds")
 
-rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df")))
+#Importing interferon-stimulated gene set:
+ISGs <- read.csv("manuscript/ISGs_GeneSets_SU.csv")
+ISGs <- ISGs$ISGs_geneset_227
+
+#Cleaning gene set:
+ISGs <- ISGs[!grepl(ISGs, pattern = "LOC") & !grepl(ISGs, pattern = "XENTR") & !grepl(ISGs, pattern = "GSON")]
+ISGs <- ISGs[ISGs != ""]
+
+rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "ISGs")))
 
 #For Patient 1:
 pt1 <- BCR[,BCR$patient == "Patient 1"]
@@ -1093,7 +1102,7 @@ DefaultAssay(pt1) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt1 <- wilcoxauc(pt1, 'sample', 
+wlx.mrk.pt1 <- wilcoxauc(pt1, 'severity', 
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1123,22 +1132,22 @@ write.table(ranked.genes,
 
 # choose top upregulated genes
 topUpmod <- ranked.genes %>% 
-  dplyr::filter(group == "moderate272_Patient1") %>%
+  dplyr::filter(group == "moderate") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 
 topDownmod <- ranked.genes %>%
-  dplyr::filter(group == "moderate272_Patient1") %>%
+  dplyr::filter(group == "moderate") %>%
   filter(rank < 0) %>%
   top_n(50, wt=-padj)
 
 topUpcrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical293_Patient1") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj) 
 
 topDowncrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical293_Patient1") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
@@ -1165,10 +1174,12 @@ alldata <- ScaleData(object = pt1,
 
 DefaultAssay(alldata) <- "RNA"
 
+alldata$severity <- factor(alldata$severity, levels = c("moderate", "critical"))
+
 ggsave(filename = "graphs/wilcox-rrho-pt1.jpeg", dpi = "print",
-       width = 15, height = 10,
+       width = 7.5, height = 5,
        plot = DoHeatmap(alldata, 
-          features = unique(top$feature), group.by = "sample",
+          features = unique(top$feature), group.by = "severity",
           size = 2, raster=TRUE, label=FALSE) + 
   theme(axis.text.y = element_text(size = 7)))
 
@@ -1270,7 +1281,7 @@ DefaultAssay(pt2) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt2 <- wilcoxauc(pt2, 'sample',
+wlx.mrk.pt2 <- wilcoxauc(pt2, 'severity',
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1300,22 +1311,22 @@ write.table(ranked.genes,
 
 # choose top upregulated genes
 topUpmod <- ranked.genes %>% 
-  dplyr::filter(group == "moderate303_Patient2") %>%
+  dplyr::filter(group == "moderate") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj) 
 
 topDownmod <- ranked.genes %>%
-  dplyr::filter(group == "moderate303_Patient2") %>%
+  dplyr::filter(group == "moderate") %>%
   filter(rank < 0) %>%
   top_n(50, wt=-padj)
 
 topUpcrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical308_Patient2") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 
 topDowncrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical308_Patient2") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
@@ -1341,10 +1352,13 @@ alldata <- ScaleData(object = pt2,
 
 DefaultAssay(alldata) <- "RNA"
 
+alldata$severity <- factor(alldata$severity, levels = c("moderate", "critical"))
+
+
 ggsave(filename = "graphs/wilcox-rrho-pt2.jpeg", dpi = "print",
-       width = 15, height = 10,
+       width = 7.5, height = 5,
        plot = DoHeatmap(alldata, 
-          features = unique(top$feature), group.by = "sample",
+          features = unique(top$feature), group.by = "severity",
           size = 2, raster=TRUE, label=FALSE) + 
   theme(axis.text.y = element_text(size = 7)))
 
@@ -1443,7 +1457,7 @@ DefaultAssay(pt3) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt3 <- wilcoxauc(pt3, 'sample', 
+wlx.mrk.pt3 <- wilcoxauc(pt3, 'severity', 
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1473,22 +1487,22 @@ write.table(ranked.genes,
 
 # choose top upregulated genes
 topUpmod <- ranked.genes %>% 
-  dplyr::filter(group == "mild186_Patient3") %>%
+  dplyr::filter(group == "mild") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj) 
 
 topDownmod <- ranked.genes %>%
-  dplyr::filter(group == "mild186_Patient3") %>%
+  dplyr::filter(group == "mild") %>%
   filter(rank < 0) %>%
   top_n(50, wt=-padj)
 
 topUpcrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical213_Patient3") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj) 
 
 topDowncrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical213_Patient3") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
@@ -1514,10 +1528,13 @@ alldata <- ScaleData(object = pt3,
 
 DefaultAssay(alldata) <- "RNA"
 
+alldata$severity <- factor(alldata$severity, levels = c("mild", "critical"))
+
+
 ggsave(filename = "graphs/wilcox-rrho-pt3.jpeg", dpi = "print",
-       width = 15, height = 10,
+       width = 7.5, height = 5,
        plot = DoHeatmap(alldata, 
-          features = unique(top$feature), group.by = "sample",
+          features = unique(top$feature), group.by = "severity",
           size = 2, raster=TRUE, label=FALSE) + 
   theme(axis.text.y = element_text(size = 7)))
 
@@ -1617,7 +1634,7 @@ DefaultAssay(pt4) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto
 
-wlx.mrk.pt4 <- wilcoxauc(pt4, 'sample',
+wlx.mrk.pt4 <- wilcoxauc(pt4, 'severity',
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1647,22 +1664,22 @@ write.table(ranked.genes,
 
 # choose top upregulated genes
 topUpmod <- ranked.genes %>% 
-  dplyr::filter(group == "mild227_Patient4") %>%
+  dplyr::filter(group == "mild") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj) 
 
 topDownmod <- ranked.genes %>%
-  dplyr::filter(group == "mild227_Patient4") %>%
+  dplyr::filter(group == "mild") %>%
   filter(rank < 0) %>%
   top_n(50, wt=-padj)
 
 topUpcrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical238_Patient4") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj) 
 
 topDowncrit <- ranked.genes %>% 
-  dplyr::filter(group == "critical238_Patient4") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
@@ -1687,10 +1704,13 @@ alldata <- ScaleData(object = pt4,
 
 DefaultAssay(alldata) <- "RNA"
 
+alldata$severity <- factor(alldata$severity, levels = c("mild", "critical"))
+
+
 ggsave(filename = "graphs/wilcox-rrho-pt4.jpeg", dpi = "print",
-       width = 15, height = 10,
+       width = 7.5, height = 5,
        plot = DoHeatmap(alldata, 
-          features = unique(top$feature), group.by = "sample",
+          features = unique(top$feature), group.by = "severity",
           size = 2, raster=TRUE, label=FALSE) + 
   theme(axis.text.y = element_text(size = 7)))
 
@@ -1795,8 +1815,8 @@ wlx.mrk.pt5.cs <- wilcoxauc(pt5, 'sample',
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
-wlx.mrk.pt5.cm <- wilcoxauc(pt5, 'sample',
-                         c("critical119_Patient5", "moderate138_Patient5"),
+wlx.mrk.pt5.cm <- wilcoxauc(pt5, 'severity',
+                         c("critical", "moderate"),
                                seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 
@@ -1813,7 +1833,7 @@ dplyr::count(wlx.mrk.pt5, group)
 # summarize the top abundant marker features for each group
 top_markers(wlx.mrk.pt5)
 
-write.table(top_markers(wlx.mrk.pt5), file = "top-wilcox-markers-pt5.tsv", sep = "\t", col.names = NA)
+write.table(top_markers(wlx.mrk.pt5.cm), file = "top-wilcox-markers-pt5-cm.tsv", sep = "\t", col.names = NA)
 
 # rank genes using rrho algorithm
 ranked.genes.cs <- wlx.mrk.pt5.cs %>%
@@ -1844,8 +1864,12 @@ topUpcritsev <- ranked.genes.cs %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 topUpcritmod <- ranked.genes.cm %>% 
-  dplyr::filter(group == "critical119_Patient5") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+topDowncritmod <- ranked.genes.cm %>% 
+  dplyr::filter(group == "critical") %>%
+  filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
 topUpsevmod <- ranked.genes.ms %>% 
@@ -1858,8 +1882,12 @@ topUpsevcrit <- ranked.genes.cs %>%
   top_n(50, wt=-padj)
 
 topUpmodcrit <- ranked.genes.cm %>% 
-  dplyr::filter(group == "moderate138_Patient5") %>%
+  dplyr::filter(group == "moderate") %>%
   filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+topDownmodcrit <- ranked.genes.cm %>% 
+  dplyr::filter(group == "moderate") %>%
+  filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 topUpmodsev <- ranked.genes.ms %>% 
   dplyr::filter(group == "moderate138_Patient5") %>%
@@ -1881,15 +1909,16 @@ write.table(topPathways,
 top <- topPathways %>% group_by(group) 
 
 # create a scale.data slot for the selected genes in subset data
-alldata <- ScaleData(object = pt5, 
+alldata <- ScaleData(object = pt5[,pt5$severity != "severe"] %>% droplevels(), 
                      features = as.character(unique(top$feature), assay = "RNA"))
 
 DefaultAssay(alldata) <- "RNA"
 
+
 ggsave(filename = "graphs/wilcox-rrho-pt5.jpeg", dpi = "print",
-       width = 15, height = 10,
+       width = 7.5, height = 5,
        plot = DoHeatmap(alldata, 
-          features = unique(top$feature), group.by = "sample",
+          features = unique(top$feature), group.by = "severity",
           size = 4, raster=TRUE, label=FALSE) + 
   theme(axis.text.y = element_text(size = 4)))
 
@@ -2207,8 +2236,8 @@ DefaultAssay(pt6) <- "RNA"
 
 # perform a fast Wilcoxon rank sum test with presto: "severe122_Patient6", 
 
-wlx.mrk.pt6.cm <- wilcoxauc(pt6, 'sample',
-                         c("critical120_Patient6",  "moderate124_Patient6"),
+wlx.mrk.pt6.cm <- wilcoxauc(pt6, 'severity',
+                         c("critical",  "moderate"),
                          seurat_assay='RNA', assay = "data") %>%
   subset(padj < 0.05) %>% arrange(padj)
 wlx.mrk.pt6.cs <- wilcoxauc(pt6, 'sample',
@@ -2259,8 +2288,12 @@ topUpcrit.cs <- ranked.genes.cs %>%
   filter(rank > 0) %>% 
   top_n(50, wt=-padj)
 topUpcrit.cm <- ranked.genes.cm %>% 
-  dplyr::filter(group == "critical120_Patient6") %>%
+  dplyr::filter(group == "critical") %>%
   filter(rank > 0) %>% 
+  top_n(50, wt=-padj)
+topDowncrit.cm <- ranked.genes.cm %>% 
+  dplyr::filter(group == "critical") %>%
+  filter(rank < 0) %>% 
   top_n(50, wt=-padj)
 
 
@@ -2275,9 +2308,13 @@ topUpsev.sm <- ranked.genes.sm %>%
 
 
 topUpmod.cm <- ranked.genes.cm %>% 
-  dplyr::filter(group == "moderate124_Patient6") %>%
+  dplyr::filter(group == "moderate") %>%
   filter(rank > 0) %>% 
-  top_n(60, wt=-padj)
+  top_n(50, wt=-padj)
+topDownmod.cm <- ranked.genes.cm %>% 
+  dplyr::filter(group == "moderate") %>%
+  filter(rank < 0) %>% 
+  top_n(50, wt=-padj)
 topUpmod.sm <- ranked.genes.sm %>% 
   dplyr::filter(group == "moderate124_Patient6") %>%
   filter(rank > 0) %>% 
@@ -2302,15 +2339,15 @@ top <- topPathways %>% group_by(group)
 
 cat(topUpsev$feature, sep = ", ")
 # create a scale.data slot for the selected genes in subset data
-alldata <- ScaleData(object = pt6, 
+alldata <- ScaleData(object = pt6[,pt6$severity != "severe"] %>% droplevels(), 
                      features = as.character(unique(top$feature), assay = "RNA"))
 
 DefaultAssay(alldata) <- "RNA"
 
 ggsave(filename = "graphs/wilcox-rrho-pt6.jpeg", dpi = "print",
-       width = 15, height = 10,
+       width = 7.5, height = 5,
        plot = DoHeatmap(alldata, 
-                        features = unique(top$feature), group.by = "sample",
+                        features = unique(top$feature), group.by = "severity",
                         size = 4, raster=TRUE, label=FALSE) + 
          theme(axis.text.y = element_text(size = 4)))
 
@@ -2673,82 +2710,6 @@ ggsave(filename = "all-pathways-critical.tiff",
          theme_bw()
 )
 
-#Adding a column for shared/unique pathways:
-allm$shared <- allm$progress
-allm[allm$pathway %in% intersect(allm[allm$progress == "progressing",]$pathway, allm[allm$progress == "recovering",]$pathway),]$shared <- "shared"
-
-allc$shared <- allc$progress
-allc[allc$pathway %in% intersect(allc[allc$progress == "progressing",]$pathway, allc[allc$progress == "recovering",]$pathway),]$shared <- "shared"
-
-allm$shared <- factor(allm$shared, levels = c("shared","progressing", "recovering"))
-allc$shared <- factor(allc$shared, levels = c("shared","progressing", "recovering"))
-
-#Setting facet labels
-new_labels <- c("shared" = "Common Pathways", "progressing" = "Pathways in Progressing Patients", "recovering" = "Pathways in Recovering Patients")
-
-#Plotting bubble plots, divided by progress, including the shared pathways:
-shared <- ggplot(transform(allm[allm$shared == "shared",]),
-                 aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
-  geom_point(alpha=0.7) +
-  facet_grid(vars(shared), labeller = labeller(shared = new_labels), drop = TRUE, space = "free") +
-  ylab("Pathways") +
-  geom_vline(xintercept = 0, linetype="dotted") +
-  scale_size(range = c(3, 8), name="genes") +
-  scale_x_continuous(breaks = c(-4,-3,-2,-1,0,1,2,3,4), limits = c(-4,4)) +
-  theme_bw() +
-  theme(plot.subtitle=element_text(size=12, face="italic", color="black")) +
-  theme(axis.text=element_text(size=12), axis.title=element_text(size=14),
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 14),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank()) 
-
-progressing <- ggplot(transform(allm[allm$shared == "progressing",]),
-                      aes(x = NES, y = reorder(pathway,NES), size = size)) +
-  geom_point(alpha=0.7, color='#F8766D') +  
-  facet_grid(vars(shared), labeller = labeller(shared = new_labels), drop = TRUE, space = "free") +
-  theme(strip.text.x = element_blank()) +
-  ylab("Pathways") +
-  geom_vline(xintercept = 0, linetype="dotted") +
-  scale_size(range = c(3, 8), name="genes") +
-  scale_x_continuous(breaks = c(-4,-3,-2,-1,0,1,2,3,4), limits = c(-4,4)) +
-  theme_bw() + 
-  theme(axis.text=element_text(size=12), 
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 14),
-        axis.title=element_text(size=14),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
-  
-
-recovering <- ggplot(transform(allm[allm$shared == "recovering",]),
-                      aes(x = NES, y = reorder(pathway,NES), size = size)) +
-  geom_point(alpha=0.7, color='#00BFC4') +  
-  facet_grid(vars(shared), labeller = labeller(shared = new_labels), drop = TRUE, space = "free") +
-  theme(strip.text.x = element_blank()) +
-  ylab("Pathways") +
-  geom_vline(xintercept = 0, linetype="dotted") +
-  scale_size(range = c(3, 8), name="genes") +
-  scale_x_continuous(breaks = c(-4,-3,-2,-1,0,1,2,3,4), limits = c(-4,4)) +
-  theme_bw() +
-  theme(axis.text=element_text(size=12), 
-        legend.title = element_text(size = 16),
-        legend.text = element_text(size = 14),
-        axis.title=element_text(size=14))
-
-bubble <- ggarrange(shared + rremove("xlab") + rremove("ylab"), progressing + rremove("xlab") + rremove("ylab"), recovering + rremove("ylab"),
-                    ncol=1, nrow=3, common.legend = TRUE, legend="right",
-                    labels = NULL, heights = c(0.5, 0.25, 0.25),
-                    align = "v", 
-                    font.label = list(size = 14, color = "black", face = "bold", family = NULL, position = "top"))
-
-bubble <- annotate_figure(bubble, left = textGrob("Pathways", rot = 90, vjust = 1, gp = gpar(fontsize = 14)))
-
-tiff(filename = "graphs/pathways-bubble.tiff",
-       width = 20, height = 12, units = "in", res = 300)
-bubble
-dev.off()
-
 
 #Patient 1 vs. all:
 DefaultAssay(BCR) <- "RNA"
@@ -2998,7 +2959,7 @@ abline(v = 0, lty = 1)
 #####ISGs in DEGs, for Patients 1-4:
 #Importing interferon-stimulated gene set:
 ISGs <- read.csv("manuscript/ISGs_GeneSets_SU.csv")
-ISGs <- ISGs$ISGs_geneset_227
+ISGs <- ISGs$ISGs_geneset_227[1:227]
 ISGs <- gsub(x = ISGs, pattern = "HLA-", replacement = "HLA.")
 
 #Cleaning gene set:
