@@ -1198,12 +1198,12 @@ enrich.topUpmod1[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enrich
 
 #Selecting only the feature and rank columns of DGE data for fgsea run:
 MNP.genes_c1 <- ranked.genes %>%
-  dplyr::filter(group == "critical293_Patient1") %>%
+  dplyr::filter(group == "critical") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
 MNP.genes_m1 <- ranked.genes %>%
-  dplyr::filter(group == "moderate272_Patient1") %>%
+  dplyr::filter(group == "moderate") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
@@ -1269,8 +1269,8 @@ all1m <- data.frame(patient = "Patient 1", severity = "moderate", progress = "pr
 
 allc <- NULL
 allm <- NULL
-allc <- rbind(allc, first(all1c[all1c$NES > 0,], 5), last(all1c[all1c$NES < 0,], 5))
-allm <- rbind(allm, first(all1m[all1m$NES > 0,], 5), last(all1m[all1m$NES < 0,], 5))
+allc <- rbind(allc, all1c)
+allm <- rbind(allm, all1m)
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -1375,12 +1375,12 @@ enrich.topUpcrit2[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enric
 
 #Selecting only the feature and rank columns of DGE data for fgsea run:
 MNP.genes_c2 <- ranked.genes %>%
-  dplyr::filter(group == "critical308_Patient2") %>%
+  dplyr::filter(group == "critical") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
 MNP.genes_m2 <- ranked.genes %>%
-  dplyr::filter(group == "moderate303_Patient2") %>%
+  dplyr::filter(group == "moderate") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
@@ -1445,8 +1445,8 @@ all2m <- data.frame(patient = "Patient 2", severity = "moderate", progress = "pr
                     NES = fgseaRes_m2$NES, padj = fgseaRes_m2$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 
-allc <- rbind(allc, first(all2c[all2c$NES > 0,], 5), last(all2c[all2c$NES < 0,], 5))
-allm <- rbind(allm, first(all2m[all2m$NES > 0,], 5), last(all2m[all2m$NES < 0,], 5))
+allc <- rbind(allc, all2c)
+allm <- rbind(allm, all2m)
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -1550,12 +1550,12 @@ enrich.topUpcrit3[["GO_Biological_Process_2021"]]$Term <-  vapply(str_split(enri
 
 #Selecting only the feature and rank columns of DGE data for fgsea run:
 MNP.genes_c3 <- ranked.genes %>%
-  dplyr::filter(group == "critical213_Patient3") %>%
+  dplyr::filter(group == "critical") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
 MNP.genes_m3 <- ranked.genes %>%
-  dplyr::filter(group == "mild186_Patient3") %>%
+  dplyr::filter(group == "mild") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
@@ -1620,8 +1620,8 @@ all3m <- data.frame(patient = "Patient 3", severity = "mild", progress = "progre
                     NES = fgseaRes_m3$NES, padj = fgseaRes_m3$padj) %>% filter(padj < 0.05)%>% arrange(desc(NES))
 
 
-allc <- rbind(allc, first(all3c[all3c$NES > 0,], 5), last(all3c[all3c$NES < 0,], 5))
-allm <- rbind(allm, first(all3m[all3m$NES > 0,], 5), last(all3m[all3m$NES < 0,], 5))
+allc <- rbind(allc, all3c)
+allm <- rbind(allm, all3m)
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -1726,12 +1726,12 @@ enrich.topUpcrit4[["GO_Biological_Process_2021"]]$Term <- vapply(str_split(enric
 
 #Selecting only the feature and rank columns of DGE data for fgsea run:
 MNP.genes_c <- ranked.genes %>%
-  dplyr::filter(group == "critical238_Patient4") %>%
+  dplyr::filter(group == "critical") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
 MNP.genes_m <- ranked.genes %>%
-  dplyr::filter(group == "mild227_Patient4") %>%
+  dplyr::filter(group == "mild") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
@@ -1797,8 +1797,8 @@ all4m <- data.frame(patient = "Patient 4", severity = "mild", progress = "progre
                     NES = fgseaRes_m4$NES, padj = fgseaRes_m4$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 
-allc <- rbind(allc, first(all4c[all4c$NES > 0,], 5), last(all4c[all4c$NES < 0,], 5))
-allm <- rbind(allm, first(all4m[all4m$NES > 0,], 5), last(all4m[all4m$NES < 0,], 5))
+allc <- rbind(allc, all4c)
+allm <- rbind(allm, all4m)
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -1995,7 +1995,7 @@ MNP.genes_cs <- ranked.genes.cs %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 MNP.genes_cm <- ranked.genes.cm %>%
-  dplyr::filter(group == "critical119_Patient5") %>%
+  dplyr::filter(group == "critical") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
@@ -2009,7 +2009,7 @@ MNP.genes_sm <- ranked.genes.ms %>%
   dplyr::select(feature, rank)
 
 MNP.genes_mc <- ranked.genes.cm %>%
-  dplyr::filter(group == "moderate138_Patient5") %>%
+  dplyr::filter(group == "moderate") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 MNP.genes_ms <- ranked.genes.ms %>%
@@ -2224,8 +2224,8 @@ all5m <- data.frame(patient = "Patient 5", severity = "moderate", progress = "re
                     NES = fgseaRes_mc5$NES, padj = fgseaRes_mc5$padj) %>% filter(padj < 0.05) %>% arrange(desc(NES))
 
 
-allc <- rbind(allc, first(all5c[all5c$NES > 0,], 5), last(all5c[all5c$NES < 0,], 5))
-allm <- rbind(allm, first(all5m[all5m$NES > 0,], 5), last(all5m[all5m$NES < 0,], 5))
+allc <- rbind(allc, all5c)
+allm <- rbind(allm, all5m)
 
 rm(list=setdiff(ls(), c("BCR", "fgsea_sets", "m_df", "allc", "allm")))
 
@@ -2429,7 +2429,7 @@ MNP.genes_cs <- ranked.genes.cs %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 MNP.genes_cm <- ranked.genes.cm %>%
-  dplyr::filter(group == "critical120_Patient6") %>%
+  dplyr::filter(group == "critical") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 
@@ -2443,7 +2443,7 @@ MNP.genes_sm <- ranked.genes.sm %>%
   dplyr::select(feature, rank)
 
 MNP.genes_mc <- ranked.genes.cm %>%
-  dplyr::filter(group == "moderate124_Patient6") %>%
+  dplyr::filter(group == "moderate") %>%
   arrange(-rank) %>% 
   dplyr::select(feature, rank)
 MNP.genes_ms <- ranked.genes.sm %>%
@@ -2658,8 +2658,8 @@ all6m <- data.frame(patient = "Patient 6", severity = "moderate", progress = "re
                     NES = fgseaRes_mc6$NES, padj = fgseaRes_mc6$padj) %>% arrange(desc(NES)) %>% filter(padj < 0.05)
 
 
-allc <- rbind(allc, first(all6c[all6c$NES > 0,], 5), last(all6c[all6c$NES < 0,], 5))
-allm <- rbind(allm, first(all6m[all6m$NES > 0,], 5), last(all6m[all6m$NES < 0,], 5))
+allc <- rbind(allc, all6c)
+allm <- rbind(allm, all6m)
 
 write.table(x = allc, file = "allc.tsv", row.names = F, sep = "\t")
 write.table(x = allm, file = "allm.tsv", row.names = F, sep = "\t")
