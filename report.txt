@@ -225,3 +225,204 @@ Tasks:
 •	Use ISGs for comparison to make heatmaps and other graphs; compare critical and moderate in pt1-4, and again in pt5-6; preferably have different cell types in horizontal layers, as in this paper. This requires ComplexHeatmap!
 •	Extract ISGs from the Excel file Sensei sent us.
 •	Try Change-O for lineage tree analysis.
+
+
+
+	
+ 
+Exp. 019			                                   		                	  2022.08.23
+
+
+Done things:
+•	Extracted averaged-out expression values per sample.
+•	Made data frame with per-sample average GEX data and azimuthNames and sample and “zeverity”.
+•	Started setup for ComplexHeatmap.
+Tasks:
+•	Use ISGs for comparison to make heatmaps and other graphs; compare critical and moderate in pt1-4, and again in pt5-6; preferably have different cell types in horizontal layers, as in this paper. This requires ComplexHeatmap!
+•	I need to incorporate cell types into averaged-out heatmap. 
+•	Try Change-O for lineage tree analysis.
+ 
+Exp. 020			                                   		                	  2022.08.24
+
+
+Done things:
+•	Added ComplexHeatmap divided by cell type and severity, using ISGs.
+•	Same as above, but using DEGs, and then again using ISGs in the DEG list.
+•	Added graphs to PowerPoint file.
+
+
+
+ 
+Exp. 021			                                   		                	  2022.08.25
+
+
+Done things:
+•	Tried Change-O, but it keeps giving this error:
+
+AssignGenes.py: error: igblastn executable not found
+•	Sent Sensei the PowerPoint file with the heatmaps.
+
+Tasks:
+•	Try Change-O for lineage tree analysis.
+•	Try Signac and Seurat for motif analysis.
+
+ 
+Exp. 022			                                   		                	  2022.08.26
+
+
+Done things:
+•	Make ISG-DEG heatmaps, for control–all, and for moderate–critical for all cells, divided  by cell types.
+
+Tasks:
+•	Make ISG-DEG heatmaps, for control–all, and for moderate–critical for all cells, divided  by cell types, and then maybe for B cells.
+
+
+
+
+
+	
+ 
+Exp. 023			                                   		                	  2022.08.29
+
+
+Done things:
+•	Adjusted averaged out heatmaps to include samples instead of patients.
+•	Made ISG-DEG heatmaps for B cells.
+•	Adjusted Change-O code to work for us (as a start)
+
+Tasks:
+•	Try Change-O and/or Signac.
+ 
+Exp. 024			                                   		                	  2022.08.31
+
+
+Done things:
+•	Made a shell script to run AssignGenes.py, MakeDb.py, and ParseDb.py on our samples.
+
+Tasks:
+•	Do the Kakenhi thing! 
+Exp. 025			                                   		                	  2022.09.01
+
+
+Done things:
+•	Modified the shell script to run AssignGenes.py, MakeDb.py, and ParseDb.py on our samples, so that it runs from the working directory root.
+•	Modified DGE.r file, so that it deals with patients without V genes. 
+
+Tasks:
+•	Continue DGE and GO/pathway analysis, write some, and send stuff to Sensei.
+ 
+Exp. 026			                                   		                	  2022.09.02
+
+
+Done things:
+•	Wrote useless code and meaningless paragraphs in the “manuscript”.
+ 
+Exp. 027			                                   		                	  2022.09.05
+
+
+Done things:
+•	Kinda finished the Kakenhi application.
+•	Extracted FWR sequences for Oyama-san.
+•	Made the bubble plot for pathways.
+
+Tasks:
+•	Compare NES between the different progress groups.
+•	Look deeply into enriched GSEs and discuss them (in writing).
+•	Think!
+•	Make the bubble plot for pathways.
+•	Do the networks, using Cytoscape.
+ 
+Exp. 028			                                   		                	  2022.09.06
+
+
+Done things:
+•	Compared NES between the different progress groups, and made the barplots.
+•	Added some lines in the manuscript regarding differential pathway enrichment in the progress groups.
+ 
+Exp. 029			                                   		                	  2022.09.07
+
+
+Done things:
+•	Looked into enriched GSEs and discussed some in the moderate stage (in writing).
+•	Received a vitamin B 12 shot!
+•	Thought a bit.
+
+
+Tasks:
+•	Look deeply into enriched GSEs and discuss them (in writing).
+•	Think!
+•	Do the networks, using Cytoscape.
+
+ 
+Exp. 030			                                   		                	  2022.09.16
+
+
+Done things:
+•	Read a bit in The Craft of Research, about the general outline of a topic/project:
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+•	Restored DGE comparison to outcome-based, rather than progress-based.
+•	Extracted constant region nucleotide sequences for 3D construction by Nishiya Sensei.
+•	Wrote a tiny bit about the pathways enriched in the critical stage in deceased vs. recovering patients.
+
+Tasks:
+•	Compare different outcome groups to healthy controls.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 031			                                   		                	  2022.09.20
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Made the bubble plots comparing pathways between progress groups.
+
+Tasks:
+•	Make heatmaps for DGE and then bubble plots for pathways showing progress in color.
+•	Continue writing about pathway analysis in the manuscript.
+•	Compare different outcome groups to healthy controls.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 032			                                   		                	  2022.09.21
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Made a PowerPoint file containing the bubble plot and the DGE heatmaps.
+•	Tried to do DGE analysis, dividing into different B cell sub-types.
+
+Tasks:
+•	Continue writing about pathway analysis in the manuscript.
+•	Compare different outcome groups to healthy controls.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 033			                                   		                	  2022.09.22
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Made a PowerPoint file with the figures (so far).
+•	Added all significant pathways to bubble plot.
+•	Wrote some in the manuscript, and sent it to Tabe Sensei.
+Tasks:
+•	Continue writing about pathway analysis in the manuscript.
+•	Compare different outcome groups to healthy controls.
+•	Think!
+•	Do the networks, using Cytoscape.
+
+
+
