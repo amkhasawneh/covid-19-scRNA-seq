@@ -4197,8 +4197,8 @@ crit <- BCR[,BCR$severity == "critical"]
 crit$sample <- droplevels(crit$sample)
 
 for (s in c(mod, crit)) {
-  for (i in c("Patient 1", "Patient 2", "Patient 3")) {
-    for (j in c("Patient 4", "Patient 5", "Patient 6")) {
+  for (i in c("Patient 1", "Patient 2", "Patient 3", "Patient 4")) {
+    for (j in c("Patient 5", "Patient 6")) {
     #Wilcoxon test:
     wlx.mrk <- wilcoxauc(s, 'patient', c(i, j),
                          seurat_assay='RNA', assay = "data") %>%
@@ -4209,6 +4209,12 @@ for (s in c(mod, crit)) {
       mutate(rank = -log10(padj) * sign(logFC)) %>%   # rank genes by strength of significance, keeping the direction of the fold change
       arrange(-rank)      
     
+    write.table(ranked.genes[ranked.genes$group == i,], file = paste0(ifelse(ncol(s) == ncol(mod), "moderate", "critical"), "-", i, "-vs-", j, "-ranked-genes.tsv"), row.names = F, sep = "\t")
+    write.table(ranked.genes[ranked.genes$group == j,], file = paste0(ifelse(ncol(s) == ncol(mod), "moderate", "critical"), "-", j, "-vs-", i, "-ranked-genes.tsv"), row.names = F, sep = "\t")
+    write.table(ranked.genes[ranked.genes$group == i,c("feature", "rank")], file = paste0(ifelse(ncol(s) == ncol(mod), "moderate", "critical"), "-", i, "-vs-", j, "-ranks.tsv"), row.names = F, sep = "\t")
+    write.table(ranked.genes[ranked.genes$group == j,c("feature", "rank")], file = paste0(ifelse(ncol(s) == ncol(mod), "moderate", "critical"), "-", j, "-vs-", i, "-ranks.tsv"), row.names = F, sep = "\t")
+    cat(ranked.genes$feature[ranked.genes$group == i], sep = " ", file = paste0(ifelse(ncol(s) == ncol(mod), "moderate", "critical"), "-", i, "-vs-", j, "-ranked-genes-list.txt"))
+    cat(ranked.genes$feature[ranked.genes$group == j], sep = " ", file = paste0(ifelse(ncol(s) == ncol(mod), "moderate", "critical"), "-", j, "-vs-", i, "-ranked-genes-list.txt"))
     
     #Selecting only the feature and rank columns of DGE data for fgsea run:
     MNP.genes.ded <- ranked.genes %>%
