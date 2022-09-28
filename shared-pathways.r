@@ -13,14 +13,32 @@ allc[allc$pathway %in% intersect(allc[allc$progress == "progressing",]$pathway, 
 allm$shared <- factor(allm$shared, levels = c("shared","progressing", "recovering"))
 allc$shared <- factor(allc$shared, levels = c("shared","progressing", "recovering"))
 
+allm$category <- "immune"
+allm$category[allm$pathway == "MYC TARGETS V1" | allm$pathway == "MYC TARGETS V2" | allm$pathway == "P53 PATHWAY" | allm$pathway == "G2M CHECKPOINT" | allm$pathway == "E2F TARGETS"] <- "proliferation"
+allm$category[allm$pathway == "KRAS SIGNALING DN" | allm$pathway == "TNFA SIGNALING VIA NFKB" | allm$pathway == "MTORC1 SIGNALING" | allm$pathway == "ANDROGEN RESPONSE"] <- "signaling"
+allm$category[allm$pathway == "FATTY ACID METABOLISM" | allm$pathway == "OXIDATIVE PHOSPHORYLATION" | allm$pathway == "GLYCOLYSIS"] <- "metabolism"
+allm$category[allm$pathway == "HYPOXIA" | allm$pathway == "UNFOLDED PROTEIN RESPONSE"] <- "pathway"
+allm$category[allm$pathway == "EPITHELIAL MESENCHYMAL TRANSITION"] <- "development"
+allm$category <- factor(allm$category, levels = c("immune", "signaling", "metabolism", "proliferation", "pathway",  "development"))
+
+allc$category <- "immune"
+allc$category[allc$pathway == "MYC TARGETS V1" | allc$pathway == "MYC TARGETS V2" | allc$pathway == "P53 PATHWAY" | allc$pathway == "G2M CHECKPOINT" | allc$pathway == "E2F TARGETS"] <- "proliferation"
+allc$category[allc$pathway == "KRAS SIGNALING DN" | allc$pathway == "TNFA SIGNALING VIA NFKB" | allc$pathway == "MTORC1 SIGNALING" | allc$pathway == "ANDROGEN RESPONSE"] <- "signaling"
+allc$category[allc$pathway == "FATTY ACID METABOLISM" | allc$pathway == "OXIDATIVE PHOSPHORYLATION" | allc$pathway == "GLYCOLYSIS"] <- "metabolism"
+allc$category[allc$pathway == "HYPOXIA" | allc$pathway == "UNFOLDED PROTEIN RESPONSE"] <- "pathway"
+allc$category[allc$pathway == "EPITHELIAL MESENCHYMAL TRANSITION"] <- "development"
+allc$category <- factor(allc$category, levels = c("immune", "signaling", "metabolism", "proliferation", "pathway",  "development"))
+
+
 #Setting facet labels
-labels <- c("shared" = "Common Pathways", "progressing" = "Pathways in Progressing Patients", "recovering" = "Pathways in Recovering Patients")
+labels <- c("immune" = "Immune", "proliferation" = "Proliferation", "signaling" = "Signaling",
+            "metabolism" = "Metabolism", "pathway" = "Pathway", "development" = "Development")
 
 #Plotting bubble plots, divided by progress, including the shared pathways:
-shared <- ggplot(transform(allm[allm$shared == "shared",]),
+immune <- ggplot(transform(allm[allm$category == "immune",]),
                  aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
   geom_point(alpha=0.7) +
-  facet_grid(vars(shared), labeller = labeller(shared = labels), drop = TRUE, space = "free") +
+  facet_grid(vars(category), labeller = labeller(category = labels), drop = TRUE, space = "free") +
   ylab("Pathways") +
   geom_vline(xintercept = 0, linetype="dotted") +
   scale_size(range = c(3, 8), name="genes") +
@@ -33,10 +51,10 @@ shared <- ggplot(transform(allm[allm$shared == "shared",]),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank()) 
 
-progressing <- ggplot(transform(allm[allm$shared == "progressing",]),
-                      aes(x = NES, y = reorder(pathway,NES), size = size)) +
-  geom_point(alpha=0.7, color='#F8766D') +  
-  facet_grid(vars(shared), labeller = labeller(shared = labels), drop = TRUE, space = "free") +
+signaling <- ggplot(transform(allm[allm$category == "signaling",]),
+                      aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
+  geom_point(alpha=0.7) +  
+  facet_grid(vars(category), labeller = labeller(category = labels), drop = TRUE, space = "free") +
   theme(strip.text.x = element_blank()) +
   ylab("Pathways") +
   geom_vline(xintercept = 0, linetype="dotted") +
@@ -51,10 +69,64 @@ progressing <- ggplot(transform(allm[allm$shared == "progressing",]),
         axis.ticks.x=element_blank())
 
 
-recovering <- ggplot(transform(allm[allm$shared == "recovering",]),
-                     aes(x = NES, y = reorder(pathway,NES), size = size)) +
-  geom_point(alpha=0.7, color='#00BFC4') +  
-  facet_grid(vars(shared), labeller = labeller(shared = labels), drop = TRUE, space = "free") +
+proliferation <- ggplot(transform(allm[allm$category == "proliferation",]),
+                     aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
+  geom_point(alpha=0.7) +  
+  facet_grid(vars(category), labeller = labeller(category = labels), drop = TRUE, space = "free") +
+  theme(strip.text.x = element_blank()) +
+  ylab("Pathways") +
+  geom_vline(xintercept = 0, linetype="dotted") +
+  scale_size(range = c(3, 8), name="genes") +
+  scale_x_continuous(breaks = c(-4,-3,-2,-1,0,1,2,3,4), limits = c(-4,4)) +
+  theme_bw() +
+  theme(axis.text=element_text(size=12), 
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 14),
+        axis.title=element_text(size=14),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+
+metabolism <- ggplot(transform(allm[allm$category == "metabolism",]),
+                     aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
+  geom_point(alpha=0.7) +  
+  facet_grid(vars(category), labeller = labeller(category = labels), drop = TRUE, space = "free") +
+  theme(strip.text.x = element_blank()) +
+  ylab("Pathways") +
+  geom_vline(xintercept = 0, linetype="dotted") +
+  scale_size(range = c(3, 8), name="genes") +
+  scale_x_continuous(breaks = c(-4,-3,-2,-1,0,1,2,3,4), limits = c(-4,4)) +
+  theme_bw() +
+  theme(axis.text=element_text(size=12), 
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 14),
+        axis.title=element_text(size=14),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+
+pathway <- ggplot(transform(allm[allm$category == "pathway",]),
+                     aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
+  geom_point(alpha=0.7) +  
+  facet_grid(vars(category), labeller = labeller(category = labels), drop = TRUE, space = "free") +
+  theme(strip.text.x = element_blank()) +
+  ylab("Pathways") +
+  geom_vline(xintercept = 0, linetype="dotted") +
+  scale_size(range = c(3, 8), name="genes") +
+  scale_x_continuous(breaks = c(-4,-3,-2,-1,0,1,2,3,4), limits = c(-4,4)) +
+  theme_bw() +
+  theme(axis.text=element_text(size=12), 
+        legend.title = element_text(size = 16),
+        legend.text = element_text(size = 14),
+        axis.title=element_text(size=14),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+
+development <- ggplot(transform(allm[allm$category == "development",]),
+                     aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
+  geom_point(alpha=0.7) +  
+  facet_grid(vars(category), labeller = labeller(category = labels), drop = TRUE, space = "free") +
   theme(strip.text.x = element_blank()) +
   ylab("Pathways") +
   geom_vline(xintercept = 0, linetype="dotted") +
@@ -66,9 +138,12 @@ recovering <- ggplot(transform(allm[allm$shared == "recovering",]),
         legend.text = element_text(size = 14),
         axis.title=element_text(size=14))
 
-bubble <- ggarrange(shared + rremove("xlab") + rremove("ylab"), progressing + rremove("xlab") + rremove("ylab"), recovering + rremove("ylab"),
-                    ncol=1, nrow=3, common.legend = TRUE, legend="right",
-                    labels = NULL, heights = c(0.5, 0.25, 0.25),
+
+
+bubble <- ggarrange(immune + rremove("xlab") + rremove("ylab"), signaling + rremove("xlab") + rremove("ylab"), metabolism + rremove("xlab") + rremove("ylab"), 
+                    pathway + rremove("xlab") + rremove("ylab"), proliferation + rremove("xlab") + rremove("ylab"), development + rremove("ylab"),
+                    ncol=1, nrow=6, common.legend = TRUE, legend="right",
+                    labels = NULL, 
                     align = "v", 
                     font.label = list(size = 14, color = "black", face = "bold", family = NULL, position = "top"))
 
