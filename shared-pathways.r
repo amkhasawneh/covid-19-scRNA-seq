@@ -149,7 +149,7 @@ bubble <- ggarrange(immune + rremove("xlab") + rremove("ylab"), signaling + rrem
 
 bubble <- annotate_figure(bubble, left = textGrob("Pathways", rot = 90, vjust = 1, gp = gpar(fontsize = 14)))
 
-tiff(filename = "graphs/pathways-bubble-moderate.tiff",
-     width = 15, height = 9, units = "in", res = 300)
+tiff(filename = "graphs/pathways-category-bubble-moderate.tiff",
+     width = 10, height = 7, units = "in", res = 300)
 bubble
 dev.off()
