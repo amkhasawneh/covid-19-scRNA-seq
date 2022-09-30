@@ -415,7 +415,7 @@ Because I want to find out whether there are differences between the patient gro
 In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
 
 Done things:
-•	Made a PowerPoint file with the figures (so far).
+•	Made a PowerPoint file with the figures (so far), and sent it to Tabe Sensei.
 •	Added all significant pathways to bubble plot.
 •	Wrote some in the manuscript, and sent it to Tabe Sensei.
 Tasks:
@@ -424,5 +424,100 @@ Tasks:
 •	Think!
 •	Do the networks, using Cytoscape.
 
+ 
+Exp. 034			                                   		                	  2022.09.26
 
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Prepared files for gProfiler and Cytoscape. Things don’t look promising; Cytoscape keeps giving errors.
+Tasks:
+•	Should we compare Patient 4 to dead or surviving patients?
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
+
+ 
+Exp. 035			                                   		                	  2022.09.27
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	
+Tasks:
+•	In pathway comparison, add the bar graphs comparing progressing and recovering patients. Group pathways according to relatedness (metabolism, signaling, inflammation, etc.), not by progression/recovery. Unify, including the same pathways exactly.
+•	In V-J gene usage bar graphs, make each facet’s size similar to the others’. Unify style and size.
+•	Should we compare Patient 4 to dead or surviving patients?
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 036			                                   		                	  2022.09.28
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Added the bar graphs comparing progress groups.
+•	Read from Farahani et al, about RAS:
+According to recent studies, the variation of RAS and ACE2 during SARS-CoV-2 infection was observed, especially an enhancing of ACE2 in the early stages of the disease and rapid reduction in the more severe stages. It was estimated that ACE2 has a protective role, and when it reduces, there is a worsening of the inflammatory pulmonary state [10], [11]. Moreover, viral infection and RAS activation induce the production of reactive oxygen species (ROS), leading to an oxidative/nitrosative burst [12]. The high levels of ROS cause detrimental effects on cellular macromolecules such as proteins, lipids, and particularly DNA. The DNA damage activates poly ADP-ribose polymerase-1 (PARP-1), viral macrodomain of non-structural protein 3, poly (ADP-ribose) glycohydrolase (PARG), and transient receptor potential melastatin type 2 (TRPM2) channel in a sequential manner which leads to cell necrosis or apoptosis [12].
+•	Grouped pathways according to category (metabolism, signaling, inflammation, etc.), not by progression/recovery. Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Shrank the bar plots. Same outline as Jessica’s, I think. Enlarged labels.
+•	In V-J gene usage bar graphs, made each facet’s size similar to the others’—enlarged the height for controls and patients 5 & 6.
+
+Tasks:
+•	Unify, including the same pathways exactly.
+•	Unify style and size.
+•	Enlarge labels, and make the font “Arial”.
+•	Should we compare Patient 4 to dead or surviving patients?
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 037			                                   		                	  2022.09.29
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Rearranged the pathway results in the manuscript, moving some parts to Discussion.
+
+Tasks:
+•	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Unify, including the same pathways exactly.
+•	Unify style and size.
+•	Enlarge labels, and make the font “Arial”.
+•	Should we compare Patient 4 to dead or surviving patients?
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 038			                                   		                	  2022.09.30
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Wrote some, including an introductory Results paragraph about B cells.
+Tasks:
+•	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Unify, including the same pathways exactly.
+•	Unify style and size.
+•	Enlarge labels, and make the font “Arial”.
+•	Should we compare Patient 4 to dead or surviving patients?
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
 
