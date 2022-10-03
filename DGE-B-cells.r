@@ -1,6 +1,7 @@
 #Laoding:
 library(presto)
 library(ComplexHeatmap)
+library(circlize)
 library(tidyverse)
 BCR <- readRDS("05-BCR-combined.rds")
 
@@ -53,31 +54,33 @@ for (i in levels(factor(BCR$patient[BCR$severity != "healthy"]))) {
   column_labels <- levels(meta$severity) 
   
   hm.m <- Heatmap(t(meta[meta$severity == "moderate",colnames(meta) %in% diff.genes$feature]), 
-                    name = "Expression", row_names_gp = gpar(fontsize = 7),
+                    name = "Expression", row_names_gp = gpar(fontsize = 10),
                     column_labels = column_labels, 
                     col = expr.cols, show_column_names = F, top_annotation = col.anno.m,
                     show_row_dend = F, show_column_dend = F, cluster_columns = T) 
   
   
   hm.c <- Heatmap(t(meta[meta$severity == "critical",colnames(meta) %in% diff.genes$feature]), 
-                    name = "Expression", row_names_gp = gpar(fontsize = 7),
+                    name = "Expression", row_names_gp = gpar(fontsize = 10),
                     column_labels = column_labels, 
                     col = expr.cols, show_column_names = F, top_annotation = col.anno.c,
                     show_row_dend = F, show_column_dend = F, cluster_columns = T) 
   
   
   
- 
   
   
+  
+  if(levels(factor(meta$patient)) == "Patient 5" | levels(factor(meta$patient)) == "Patient 6") {
+    ht_list <- hm.c + hm.m
+    
+  } else {
+    ht_list <- hm.m + hm.c
+  }
   tiff(paste0("./graphs/hm-critical-moderate-", i,".tiff"),
        res = 300, width = 5, height = 10, units = "in")
-  if(levels(factor(meta$patient)) == "Patient 5" | levels(factor(meta$patient)) == "Patient 6") {
-    draw(hm.c + hm.m)
-  } else {
-           draw(hm.m + hm.c)      
-         }
-     
+  draw(ht_list); row_order(ht_list)
+  cat(hm.m@row_names_param$labels[row_order(ht_list)], sep = "\n", file = paste0("hm-critical-moderate-", i, "-genes.txt"))
   
   dev.off()
   
