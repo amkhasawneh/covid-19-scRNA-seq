@@ -751,124 +751,29 @@ rownames(cellNumPercentage_P6) <- cellNumPercentage_P6[,1]
 cellNumPercentage_P6 <- cellNumPercentage_P6[,-1]
 colnames(cellNumPercentage_P6) <- c("critical", "severe", "moderate")
 
-tiff(file="graphs/barplot-Patient62.tiff", width=6, height=6, units="in", res=300)
+tiff(file="graphs/barplot-Patient6.tiff", width=6, height=6, units="in", res=300)
 par(mai=c(1, 1.4, 0.82, 1.42))
 par(bty="l")
 barplot(as.matrix(cellNumPercentage_P6), 
         width = 0.5, las=2, col=cols,
         legend.text=F, 
         font.axis = 1, las = 1,
-        args.legend=list(x=2.15,y=100,bty="n", cex=0.7)) 
+        args.legend=list(x=1.4,y=100,bty="n", cex=0.7)) 
 dev.off()
 
 ####################################B cell UMAPs################################
 
-rm(list=setdiff(ls(), c("BCR", "cols")))
-#For controls:
-tiff(file = "graphs/umap-bcr-healthy-grid.tiff", width = 7, height = 4, units = "in", res = 300)
-par(bty = "l")
-DimPlot(object = BCR[,BCR$severity == "healthy"], 
-        group.by = "azimuthNames", split.by = "patient",
-        reduction = "umap", pt.size=1, cols = cols,
-        label = TRUE, label.size = 3.5,  repel = TRUE
-) + labs(title = "") + NoLegend() +
-  xlim(-10, 5) + ylim(-10, 15)
-dev.off()
-
-rm(list=setdiff(ls(), c("BCR", "cols")))
-
-#For Patient 1:
-pt1 <- BCR[,BCR$patient == "Patient 1"]
-pt1$severity <- factor(pt1$severity, levels = c("moderate", "critical"))
-
-tiff(file = "graphs/umap-bcr-pt1-grid.tiff", width = 5, height = 4, units = "in", res = 300)
-par(bty = "l")
-DimPlot(object = pt1, 
-        group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1, cols = cols,
-        label = TRUE, label.size = 3.5,  repel = TRUE
-) + labs(title = "Patient 1") + NoLegend() +
-  xlim(-10, 5) + ylim(-10, 15)
-dev.off()
-
-rm(list=setdiff(ls(), c("BCR", "cols")))
-
-#For Patient 2:
-pt2 <- BCR[,BCR$patient == "Patient 2"]
-pt2$severity <- factor(pt2$severity, levels = c("moderate", "critical"))
-
-tiff(file = "graphs/umap-bcr-pt2-grid.tiff", width = 5, height = 4, units = "in", res = 300)
-par(bty = "l")
-DimPlot(object = pt2, 
-        group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1, cols = cols,
-        label = TRUE, label.size = 3.5,  repel = TRUE
-) + labs(title = "Patient 2") + NoLegend() +
-  xlim(-10, 5) + ylim(-10, 15)
-dev.off()
-
-rm(list=setdiff(ls(), c("BCR", "cols")))
-
-#For Patient 3:
-pt3 <- BCR[,BCR$patient == "Patient 3"]
-pt3$severity <- factor(pt3$severity, levels = c("mild", "critical"))
-
-tiff(file = "graphs/umap-bcr-pt3-grid.tiff", width = 5, height = 4, units = "in", res = 300)
-par(bty = "l")
-DimPlot(object = pt3, 
-        group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1, cols = cols,
-        label = TRUE, label.size = 3.5,  repel = TRUE
-) + labs(title = "Patient 3") + NoLegend() +
-  xlim(-10, 5) + ylim(-10, 15)
-dev.off()
-
-rm(list=setdiff(ls(), c("BCR", "cols")))
-
-#For Patient 4:
-pt4 <- BCR[,BCR$patient == "Patient 4"]
-pt4$severity <- factor(pt4$severity, levels = c("mild", "critical"))
-
-tiff(file = "graphs/umap-bcr-pt4-grid.tiff", width = 5, height = 4, units = "in", res = 300)
-par(bty = "l")
-DimPlot(object = pt4, 
-        group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1, cols = cols,
-        label = TRUE, label.size = 3.5,  repel = TRUE
-) + labs(title = "Patient 4") + NoLegend() +
-  xlim(-10, 5) + ylim(-10, 15)
-dev.off()
-
-rm(list=setdiff(ls(), c("BCR", "cols")))
-
-#For Patient 5:
-pt5 <- BCR[,BCR$patient == "Patient 5"]
-pt5$severity <- factor(pt5$severity, levels = c("critical", "severe", "moderate"))
-
-tiff(file = "graphs/umap-bcr-pt5-grid.tiff", width = 7, height = 4, units = "in", res = 300)
-par(bty = "l")
-DimPlot(object = pt5, 
-        group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1, cols = cols,
-        label = TRUE, label.size = 3.5,  repel = TRUE
-) + labs(title = "Patient 5") + NoLegend() +
-  xlim(-10, 5) + ylim(-10, 15)
-dev.off()
-
-rm(list=setdiff(ls(), c("BCR", "cols")))
-
-#For Patient 6:
-pt6 <- BCR[,BCR$patient == "Patient 6"]
-pt6$severity <- factor(pt6$severity, levels = c("critical", "severe", "moderate"))
-
-tiff(file = "graphs/umap-bcr-pt6-grid.tiff", width = 7, height = 4, units = "in", res = 300)
-par(bty = "l")
-DimPlot(object = pt6, 
-        group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1, cols = cols,
-        label = TRUE, label.size = 3.5,  repel = TRUE
-) + labs(title = "Patient 6") + NoLegend() +
-  xlim(-10, 5) + ylim(-10, 15)
-dev.off()
-
+for (i in levels(BCR$sample)) {
+  
+  ggsave(filename =  paste0("graphs/umap-bcr-", i, "-grid.tiff"), width = 4, height = 4, units = "in", dpi = 300,
+          plot = DimPlot(object = BCR[,BCR$sample == i] %>% droplevels(), 
+          group.by = "azimuthNames", 
+          reduction = "umap", pt.size=0.1, cols = cols,
+          repel = TRUE, label = T, label.size = 3
+  ) + labs(title = "") + NoLegend() +
+    xlim(-10, 5) + ylim(-5, 15))
+  
+ 
+  
+}
 
