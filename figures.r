@@ -169,7 +169,7 @@ plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
                                                 "#4666FF", "#EEE600", "#39FF14"))
 
 ggsave(filename = paste0("v-j-gene-bar-hc-stacked.jpeg"), plot = plot,
-       dpi = "print", height = 10, width = 20, path = "./graphs/")
+       dpi = "print", height = 15, width = 20, path = "./graphs/")
 
 #Histograms for V gene usage in Patient 1:
 BCR@meta.data[BCR$patient == "Patient 1",] %>%
@@ -181,17 +181,17 @@ df$severity <- factor(df$severity, levels = c("moderate", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
   geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
-  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  scale_y_continuous(labels=scales::percent, limits = c(0,0.20)) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 30),
+        strip.text = element_text(size = 40),
         plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
-ggsave(filename = paste0("v-j-gene-bar-pt1-stacked.jpeg"), plot = plot,
+ggsave(filename = paste0("v-j-gene-bar-pt1-stacked-20.jpeg"), plot = plot,
              dpi = "print", height = 10, width = 20, path = "./graphs/")
       
 #Histograms for V gene usage in Patient 2:
@@ -204,17 +204,17 @@ df$severity <- factor(df$severity, levels = c("moderate", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
   geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
-  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  scale_y_continuous(labels=scales::percent, limits = c(0,0.50)) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 30),
+        strip.text = element_text(size = 40),
         plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
-ggsave(filename = paste0("v-j-gene-bar-pt2-stacked.jpeg"), plot = plot,
+ggsave(filename = paste0("v-j-gene-bar-pt2-stacked-50.jpeg"), plot = plot,
              dpi = "print", height = 10, width = 20, path = "./graphs/")
       
 #Histograms for V gene usage in Patient 3:
@@ -227,17 +227,17 @@ df$severity <- factor(df$severity, levels = c("mild", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
   geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
-  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  scale_y_continuous(labels=scales::percent, limits = c(0,0.20)) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 30),
+        strip.text = element_text(size = 40),
         plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
-ggsave(filename = paste0("v-j-gene-bar-pt3-stacked.jpeg"), plot = plot,
+ggsave(filename = paste0("v-j-gene-bar-pt3-stacked-20.jpeg"), plot = plot,
              dpi = "print", height = 10, width = 20, path = "./graphs/")
       
 #Histograms for V gene usage in Patient 4:
@@ -250,17 +250,17 @@ df$severity <- factor(df$severity, levels = c("mild", "critical"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
   geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
-  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  scale_y_continuous(labels=scales::percent, limits = c(0,0.20)) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 30),
+        strip.text = element_text(size = 40),
         plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14")) 
     
-ggsave(filename = paste0("v-j-gene-bar-pt4-stacked.jpeg"), plot = plot,
+ggsave(filename = paste0("v-j-gene-bar-pt4-stacked-20.jpeg"), plot = plot,
              dpi = "print", height = 10, width = 20, path = "./graphs/")
       
 #Histograms for V gene usage in Patient 5:
@@ -273,17 +273,17 @@ df$severity <- factor(df$severity, levels = c("critical", "severe", "moderate"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
   geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
-  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  scale_y_continuous(labels=scales::percent, limits = c(0,0.20)) + facet_wrap(~severity, ncol = 1) +
   xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
   theme(axis.text.x = element_text(angle = 90, size = 24),
         axis.text.y = element_text(size = 15),
         axis.title = element_text(size = 20),
-        strip.text = element_text(size = 30),
+        strip.text = element_text(size = 40),
         plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
-ggsave(filename = paste0("v-j-gene-bar-pt5-stacked.jpeg"), plot = plot,
+ggsave(filename = paste0("v-j-gene-bar-pt5-stacked-20.jpeg"), plot = plot,
              dpi = "print", height = 15, width = 20, path = "./graphs/")
       
 #Histograms for V gene usage in Patient 6:
@@ -296,17 +296,17 @@ df$severity <- factor(df$severity, levels = c("critical", "severe", "moderate"))
       
 plot <- ggplot(data = df, aes(x = v_gene, fill = j_gene)) +
   geom_bar(aes(y = (..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) + 
-  scale_y_continuous(labels=scales::percent) + facet_wrap(~severity, ncol = 1) +
+  scale_y_continuous(labels=scales::percent, limits = c(0,0.20)) + facet_wrap(~severity, ncol = 1) +
 xlab("V Gene") + ylab("Percentage") + ggtitle(df$patient) +
 theme(axis.text.x = element_text(angle = 90, size = 24),
       axis.text.y = element_text(size = 15),
       axis.title = element_text(size = 20),
-      strip.text = element_text(size = 30),
+      strip.text = element_text(size = 40),
       plot.title = element_text(size = 30)) + 
   scale_fill_discrete(name = "J Gene", type = c("#FFA700", "#E206CB", "#DC143C",
                                                 "#4666FF", "#EEE600", "#39FF14"))
     
-ggsave(filename = paste0("v-j-gene-bar-pt6-stacked.jpeg"), plot = plot,
+ggsave(filename = paste0("v-j-gene-bar-pt6-stacked-20.jpeg"), plot = plot,
              dpi = "print", height = 15, width = 20, path = "./graphs/")
       
 #Heatmaps for V and J gene usage in B cells:
@@ -555,14 +555,14 @@ colnames(cellNumPercentage_hc) <- c("cellType","Control 1","Control 2", "Control
 cellNumPercentage_hc <- cellNumPercentage_hc[,-1]
 
 
-tiff(file = "graphs/barplot-healthy.tiff", width = 10, height = 10, units = "in", res = 300)
+tiff(file = "graphs/barplot-healthy.tiff", width = 6, height = 6, units = "in", res = 300)
 par(mai = c(1, 1.4, 0.82, 1.88))
 par(bty = "l")
 barplot(as.matrix(cellNumPercentage_hc), 
         width = 0.5, las = 2, col = cols,
         legend.text = TRUE, 
         font.axis = 1, las = 1,
-        args.legend = list(x = 2.39, y = 55, bty = "n", cex = 1.4)) 
+        args.legend = list(x = 3.2, y = 55, bty = "n", cex = 1.4)) 
 dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
@@ -586,7 +586,7 @@ colnames(cellNumPercentage_P1) <- c("cellType","moderate","critical")
 cellNumPercentage_P1 <- cellNumPercentage_P1[,-1]
 
 
-tiff(file="graphs/barplot-Patient1.tiff", width=10, height=10, units="in", res=300)
+tiff(file="graphs/barplot-Patient1.tiff", width=5, height=5, units="in", res=300)
 par(mai=c(1, 1.4, 0.82, 1.42))
 par(bty="l")
 barplot(as.matrix(cellNumPercentage_P1), 
@@ -617,7 +617,7 @@ colnames(cellNumPercentage_P2) <- c("cellType","moderate","critical")
 cellNumPercentage_P2 <- cellNumPercentage_P2[,-1]
 
 
-tiff(file="graphs/barplot-Patient2.tiff", width=10, height=10, units="in", res=300)
+tiff(file="graphs/barplot-Patient2.tiff", width=5, height=5, units="in", res=300)
 par(mai=c(1, 1.4, 0.82, 1.42))
 par(bty="l")
 barplot(as.matrix(cellNumPercentage_P2), 
@@ -648,7 +648,7 @@ colnames(cellNumPercentage_P3) <- c("cellType","mild","critical")
 cellNumPercentage_P3 <- cellNumPercentage_P3[,-1]
 
 
-tiff(file="graphs/barplot-Patient3.tiff", width=10, height=10, units="in", res=300)
+tiff(file="graphs/barplot-Patient3.tiff", width=5, height=5, units="in", res=300)
 par(mai=c(1, 1.4, 0.82, 1.42))
 par(bty="l")
 barplot(as.matrix(cellNumPercentage_P3), 
@@ -679,7 +679,7 @@ colnames(cellNumPercentage_P4) <- c("cellType","mild","critical")
 cellNumPercentage_P4 <- cellNumPercentage_P4[,-1]
 
 
-tiff(file="graphs/barplot-Patient4.tiff", width=10, height=10, units="in", res=300)
+tiff(file="graphs/barplot-Patient42.tiff", width=5, height=5, units="in", res=300)
 par(mai=c(1, 1.4, 0.82, 1.42))
 par(bty="l")
 barplot(as.matrix(cellNumPercentage_P4), 
@@ -715,7 +715,7 @@ rownames(cellNumPercentage_P5) <- cellNumPercentage_P5[,1]
 cellNumPercentage_P5 <- cellNumPercentage_P5[,-1]
 colnames(cellNumPercentage_P5) <- c("critical", "severe", "moderate")
 
-tiff(file="graphs/barplot-Patient5.tiff", width=10, height=10, units="in", res=300)
+tiff(file="graphs/barplot-Patient5.tiff", width=6, height=6, units="in", res=300)
 par(mai=c(1, 1.4, 0.82, 1.42))
 par(bty="l")
 barplot(as.matrix(cellNumPercentage_P5), 
@@ -751,7 +751,7 @@ rownames(cellNumPercentage_P6) <- cellNumPercentage_P6[,1]
 cellNumPercentage_P6 <- cellNumPercentage_P6[,-1]
 colnames(cellNumPercentage_P6) <- c("critical", "severe", "moderate")
 
-tiff(file="graphs/barplot-Patient6.tiff", width=10, height=10, units="in", res=300)
+tiff(file="graphs/barplot-Patient62.tiff", width=6, height=6, units="in", res=300)
 par(mai=c(1, 1.4, 0.82, 1.42))
 par(bty="l")
 barplot(as.matrix(cellNumPercentage_P6), 
@@ -765,13 +765,14 @@ dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
 #For controls:
-tiff(file = "graphs/umap-bcr-healthy-grid.tiff", width = 15, height = 5, units = "in", res = 300)
+tiff(file = "graphs/umap-bcr-healthy-grid.tiff", width = 7, height = 4, units = "in", res = 300)
 par(bty = "l")
 DimPlot(object = BCR[,BCR$severity == "healthy"], 
         group.by = "azimuthNames", split.by = "patient",
-        reduction = "umap", pt.size=1.5, cols = cols,
-        label = TRUE, label.size = 3,  repel = TRUE
-) + labs(title = "") + NoLegend()
+        reduction = "umap", pt.size=1, cols = cols,
+        label = TRUE, label.size = 3.5,  repel = TRUE
+) + labs(title = "") + NoLegend() +
+  xlim(-10, 5) + ylim(-10, 15)
 dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
@@ -780,13 +781,14 @@ rm(list=setdiff(ls(), c("BCR", "cols")))
 pt1 <- BCR[,BCR$patient == "Patient 1"]
 pt1$severity <- factor(pt1$severity, levels = c("moderate", "critical"))
 
-tiff(file = "graphs/umap-bcr-pt1-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+tiff(file = "graphs/umap-bcr-pt1-grid.tiff", width = 5, height = 4, units = "in", res = 300)
 par(bty = "l")
 DimPlot(object = pt1, 
         group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1.5, cols = cols,
-        label = TRUE, label.size = 3,  repel = TRUE
-) + labs(title = "Patient 1") + NoLegend()
+        reduction = "umap", pt.size=1, cols = cols,
+        label = TRUE, label.size = 3.5,  repel = TRUE
+) + labs(title = "Patient 1") + NoLegend() +
+  xlim(-10, 5) + ylim(-10, 15)
 dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
@@ -795,13 +797,14 @@ rm(list=setdiff(ls(), c("BCR", "cols")))
 pt2 <- BCR[,BCR$patient == "Patient 2"]
 pt2$severity <- factor(pt2$severity, levels = c("moderate", "critical"))
 
-tiff(file = "graphs/umap-bcr-pt2-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+tiff(file = "graphs/umap-bcr-pt2-grid.tiff", width = 5, height = 4, units = "in", res = 300)
 par(bty = "l")
 DimPlot(object = pt2, 
         group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1.5, cols = cols,
-        label = TRUE, label.size = 3,  repel = TRUE
-) + labs(title = "Patient 2") + NoLegend()
+        reduction = "umap", pt.size=1, cols = cols,
+        label = TRUE, label.size = 3.5,  repel = TRUE
+) + labs(title = "Patient 2") + NoLegend() +
+  xlim(-10, 5) + ylim(-10, 15)
 dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
@@ -810,13 +813,14 @@ rm(list=setdiff(ls(), c("BCR", "cols")))
 pt3 <- BCR[,BCR$patient == "Patient 3"]
 pt3$severity <- factor(pt3$severity, levels = c("mild", "critical"))
 
-tiff(file = "graphs/umap-bcr-pt3-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+tiff(file = "graphs/umap-bcr-pt3-grid.tiff", width = 5, height = 4, units = "in", res = 300)
 par(bty = "l")
 DimPlot(object = pt3, 
         group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1.5, cols = cols,
-        label = TRUE, label.size = 3,  repel = TRUE
-) + labs(title = "Patient 3") + NoLegend()
+        reduction = "umap", pt.size=1, cols = cols,
+        label = TRUE, label.size = 3.5,  repel = TRUE
+) + labs(title = "Patient 3") + NoLegend() +
+  xlim(-10, 5) + ylim(-10, 15)
 dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
@@ -825,13 +829,14 @@ rm(list=setdiff(ls(), c("BCR", "cols")))
 pt4 <- BCR[,BCR$patient == "Patient 4"]
 pt4$severity <- factor(pt4$severity, levels = c("mild", "critical"))
 
-tiff(file = "graphs/umap-bcr-pt4-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+tiff(file = "graphs/umap-bcr-pt4-grid.tiff", width = 5, height = 4, units = "in", res = 300)
 par(bty = "l")
 DimPlot(object = pt4, 
         group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1.5, cols = cols,
-        label = TRUE, label.size = 3,  repel = TRUE
-) + labs(title = "Patient 4") + NoLegend()
+        reduction = "umap", pt.size=1, cols = cols,
+        label = TRUE, label.size = 3.5,  repel = TRUE
+) + labs(title = "Patient 4") + NoLegend() +
+  xlim(-10, 5) + ylim(-10, 15)
 dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
@@ -840,13 +845,14 @@ rm(list=setdiff(ls(), c("BCR", "cols")))
 pt5 <- BCR[,BCR$patient == "Patient 5"]
 pt5$severity <- factor(pt5$severity, levels = c("critical", "severe", "moderate"))
 
-tiff(file = "graphs/umap-bcr-pt5-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+tiff(file = "graphs/umap-bcr-pt5-grid.tiff", width = 7, height = 4, units = "in", res = 300)
 par(bty = "l")
 DimPlot(object = pt5, 
         group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1.5, cols = cols,
-        label = TRUE, label.size = 3,  repel = TRUE
-) + labs(title = "Patient 5") + NoLegend()
+        reduction = "umap", pt.size=1, cols = cols,
+        label = TRUE, label.size = 3.5,  repel = TRUE
+) + labs(title = "Patient 5") + NoLegend() +
+  xlim(-10, 5) + ylim(-10, 15)
 dev.off()
 
 rm(list=setdiff(ls(), c("BCR", "cols")))
@@ -855,13 +861,14 @@ rm(list=setdiff(ls(), c("BCR", "cols")))
 pt6 <- BCR[,BCR$patient == "Patient 6"]
 pt6$severity <- factor(pt6$severity, levels = c("critical", "severe", "moderate"))
 
-tiff(file = "graphs/umap-bcr-pt6-grid.tiff", width = 10, height = 10, units = "in", res = 300)
+tiff(file = "graphs/umap-bcr-pt6-grid.tiff", width = 7, height = 4, units = "in", res = 300)
 par(bty = "l")
 DimPlot(object = pt6, 
         group.by = "azimuthNames", split.by = "severity",
-        reduction = "umap", pt.size=1.5, cols = cols,
-        label = TRUE, label.size = 3,  repel = TRUE
-) + labs(title = "Patient 6") + NoLegend()
+        reduction = "umap", pt.size=1, cols = cols,
+        label = TRUE, label.size = 3.5,  repel = TRUE
+) + labs(title = "Patient 6") + NoLegend() +
+  xlim(-10, 5) + ylim(-10, 15)
 dev.off()
 
 
