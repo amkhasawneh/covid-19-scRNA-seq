@@ -520,4 +520,87 @@ Tasks:
 •	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
 •	Think!
 •	Do the networks, using Cytoscape.
+ 
+Exp. 039			                                   		                	  2022.10.03
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Adjusted some of the figures in the file from Sensei.
+Tasks:
+•	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Unify, including the same pathways exactly.
+•	Unify style and size.
+•	Enlarge labels, and make the font “Arial”.
+•	Should we compare Patient 4 to dead or surviving patients?
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 040			                                   		                	  2022.10.04
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Adjusted the rest of the figures in the file from Sensei.
+•	Again attempted to make the networks, to no avail.
+•	We’re comparing Patient 4 to dead patients in critical, and to surviving ones in moderate.
+•	Read some of Fan Zhang et al’s (Signal Transduction and Targeted Therapy, 2020):
+
+“IGHV4-34 B-cell clones, rarely present in IgG memory B cells from healthy individuals, were highly represented in one of the severe cases… IGHV3-23–IGHJ4 BCR clones appeared SARS-CoV-2 specific.”
+
+“Compared with the HCs and the MPs, the SPs clearly expressed more genes in the pathways of “B-cell-mediated immunity,” “complement activation,” “humoral immune response mediated by circulating immunoglobulin,” and “phagocytosis,” indicating a more extensive humoral immune response in the severe cases… The upregulation of the complement pathway in the SPs suggests a systemic pro-inflammatory response induced by SARS-CoV-2 infection as documented before.” (Gralinski, L. E. et al. Complement activation contributes to severe acute respiratory syndrome coronavirus pathogenesis.)
+
+“Higher levels of BCR clonal expansion (Fig. 1) and B-cell activation (Fig. 3) are present in the SP group, indicating a more robust humoral immune response happened in severe infection. Taken together, these results denote that SPs and MPs may experience different cellular and humoral immune responses, which likely are related to different degrees of disease severity.”
+
+“The heterogeneity in immune responses of COVID-19 patients was also observed in the youngest (44 years) patient S2. The IGHV4-34 B-cell clones, rarely present in IgG memory B cells from healthy individuals,20 were highly expressed in this patients.”
+
+
+Tasks:
+•	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Unify, including the same pathways exactly.
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 041			                                   		                	  2022.10.05
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	Read Schultheiß et al.’s paper; it’s not of much use.
+•	Read in The Craft of Research while waiting at the clinic.
+•	Adjusted a bit in the first part of Results.
+
+Tasks:
+•	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Unify, including the same pathways exactly.
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 042			                                   		                	  2022.10.06
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+Done things:
+•	
+Tasks:
+•	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Unify, including the same pathways exactly.
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Think!
+•	Do the networks, using Cytoscape.
 
