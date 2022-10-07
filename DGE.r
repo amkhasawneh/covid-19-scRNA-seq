@@ -5947,7 +5947,7 @@ for (s in c(mod, crit)) {
                   c(i, j),
                   seurat_assay = "RNA",
                   assay = "data") %>%
-        subset(padj < 0.001) %>% arrange(padj)
+        subset(padj < 0.05 & logFC > 0.41) %>% arrange(padj)
       
       #Ranking genes using rrho algorithm again
       ranked.genes <- wlx.mrk %>%
@@ -6064,16 +6064,16 @@ for (s in c(mod, crit)) {
           )
         ) +
         theme(
-          axis.text.x = element_text(vjust = 0.5, size = 10),
-          axis.text.y = element_text(size = 10, vjust = 0.5),
+          axis.text.x = element_text(vjust = 0.5, size = 12),
+          axis.text.y = element_text(size = 12, vjust = 0.5),
           plot.title = element_text(hjust = 0.5, size = 14),
-          axis.title = element_text(size = 10),
+          axis.title = element_text(size = 12),
           legend.position = 'right',
           legend.key.size = unit(0.25, 'cm'),
           legend.key.height = unit(0.25, 'cm'),
           legend.key.width = unit(0.25, 'cm'),
-          legend.title = element_text(size = 10),
-          legend.text = element_text(size = 10)
+          legend.title = element_text(size = 12),
+          legend.text = element_text(size = 12)
         )
       ggsave(
         path =  "graphs/",
