@@ -49,7 +49,8 @@ immune <- ggplot(transform(allm[allm$category == "immune",]),
         legend.title = element_text(size = 16),
         legend.text = element_text(size = 14),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank()) 
+        axis.ticks.x=element_blank(),
+        strip.text.y = element_text(size = 14)) 
 
 signaling <- ggplot(transform(allm[allm$category == "signaling",]),
                       aes(x = NES, y = reorder(pathway,NES), color = progress, size = size)) +
@@ -66,7 +67,8 @@ signaling <- ggplot(transform(allm[allm$category == "signaling",]),
         legend.text = element_text(size = 14),
         axis.title=element_text(size=14),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(),
+        strip.text.y = element_text(size = 14))
 
 
 proliferation <- ggplot(transform(allm[allm$category == "proliferation",]),
@@ -84,7 +86,8 @@ proliferation <- ggplot(transform(allm[allm$category == "proliferation",]),
         legend.text = element_text(size = 14),
         axis.title=element_text(size=14),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(),
+        strip.text.y = element_text(size = 14))
 
 
 metabolism <- ggplot(transform(allm[allm$category == "metabolism",]),
@@ -102,7 +105,8 @@ metabolism <- ggplot(transform(allm[allm$category == "metabolism",]),
         legend.text = element_text(size = 14),
         axis.title=element_text(size=14),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(),
+        strip.text.y = element_text(size = 14))
 
 
 other <- ggplot(transform(allm[allm$category == "other",]),
@@ -118,7 +122,8 @@ other <- ggplot(transform(allm[allm$category == "other",]),
   theme(axis.text=element_text(size=12), 
         legend.title = element_text(size = 16),
         legend.text = element_text(size = 14),
-        axis.title=element_text(size=14))
+        axis.title=element_text(size=14),
+        strip.text.y = element_text(size = 14))
 
 
 
@@ -129,7 +134,7 @@ bubble <- ggarrange(immune + rremove("xlab") + rremove("ylab"), signaling + rrem
                     align = "v", 
                     font.label = list(size = 14, color = "black", face = "bold", family = NULL, position = "top"))
 
-bubble <- annotate_figure(bubble, left = textGrob("Pathways", rot = 90, vjust = 1, gp = gpar(fontsize = 14)))
+bubble <- annotate_figure(bubble, left = text_grob("Pathways", rot = 90, vjust = 1, size = 14))
 
 tiff(filename = "graphs/pathways-category-bubble-moderate.tiff",
      width = 10, height = 7, units = "in", res = 300)
