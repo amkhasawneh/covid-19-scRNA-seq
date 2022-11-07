@@ -18,8 +18,6 @@ moderate303 <- Read10X("from_cellranger\\moderate303\\sample_feature_bc_matrix")
 critical308 <- Read10X("from_cellranger\\critical308\\sample_feature_bc_matrix")
 moderate138 <- Read10X("from_cellranger\\moderate138\\sample_feature_bc_matrix")
 moderate272 <- Read10X("from_cellranger\\moderate272\\sample_feature_bc_matrix")
-severe122 <- Read10X("from_cellranger\\severe122\\sample_feature_bc_matrix")
-severe123 <- Read10X("from_cellranger\\severe123\\sample_feature_bc_matrix")
 critical119 <- Read10X("from_cellranger\\critical119\\sample_feature_bc_matrix")
 critical120 <- Read10X("from_cellranger\\critical120\\sample_feature_bc_matrix")
 critical238 <- Read10X("from_cellranger\\critical238\\sample_feature_bc_matrix")
@@ -27,7 +25,6 @@ critical293 <- Read10X("from_cellranger\\critical293\\sample_feature_bc_matrix")
 hc1 <- Read10X("from_cellranger\\hc1\\sample_feature_bc_matrix")
 hc2 <- Read10X("from_cellranger\\hc2\\sample_feature_bc_matrix")
 hc3 <- Read10X("from_cellranger\\hc3\\sample_feature_bc_matrix")
-hc4 <- Read10X("from_cellranger\\hc4\\sample_feature_bc_matrix")
 
 #Creating Seurat objects:
 mild227 <- CreateSeuratObject(counts = mild227, min.cells = 3, min.features = 100)
@@ -36,8 +33,6 @@ moderate124 <- CreateSeuratObject(counts = moderate124, min.cells = 3, min.featu
 moderate138 <- CreateSeuratObject(counts = moderate138, min.cells = 3, min.features = 100)
 moderate272 <- CreateSeuratObject(counts = moderate272, min.cells = 3, min.features = 100)
 moderate303 <- CreateSeuratObject(counts = moderate303, min.cells = 3, min.features = 100)
-severe122 <- CreateSeuratObject(counts = severe122, min.cells = 3, min.features = 100)
-severe123 <- CreateSeuratObject(counts = severe123, min.cells = 3, min.features = 100)
 critical119 <- CreateSeuratObject(counts = critical119, min.cells = 3, min.features = 100)
 critical120 <- CreateSeuratObject(counts = critical120, min.cells = 3, min.features = 100)
 critical213 <- CreateSeuratObject(counts = critical213, min.cells = 3, min.features = 100)
@@ -47,21 +42,17 @@ critical308 <- CreateSeuratObject(counts = critical308, min.cells = 3, min.featu
 hc1 <- CreateSeuratObject(counts = hc1, min.cells = 3, min.features = 100)
 hc2 <- CreateSeuratObject(counts = hc2, min.cells = 3, min.features = 100)
 hc3 <- CreateSeuratObject(counts = hc3, min.cells = 3, min.features = 100)
-hc4 <- CreateSeuratObject(counts = hc4, min.cells = 3, min.features = 100)
 
 covid <- merge(x = critical119, y = c(critical119, critical120, critical213, critical238,
                                       critical293, critical308,
                                       mild186, mild227, 
                                       moderate124, moderate138, moderate272, moderate303,
-                                      severe122, severe123,
-                                      hc1, hc2, hc3, hc4), 
+                                      hc1, hc2, hc3), 
                add.cell.ids = c("critical119_Patient5", "critical120_Patient6", "critical213_Patient3",
                                 "critical238_Patient4", "critical293_Patient1", "critical308_Patient2", 
                                 "mild186_Patient3", "mild227_Patient4", 
                                 "moderate124_Patient6", "moderate138_Patient5", "moderate272_Patient1", "moderate303_Patient2",
-                                "severe122_Patient6", "severe123_Patient5",
-                                "healthy1_control1", "healthy2_control2", "healthy3_control3", 
-                                "healthy4_control4"),
+                                "healthy1_control1", "healthy2_control2", "healthy3_control3"),
                project = "covid-19")
 
 head(covid@meta.data)
@@ -71,7 +62,7 @@ saveRDS(covid, "00-covid-raw.rds")
 
 remove(critical119, critical120, critical238, critical213, critical293, critical308,
       mild186, mild227, moderate124, moderate138, moderate272, moderate303,
-      severe122, severe123, hc1, hc2, hc3, hc4)
+      hc1, hc2, hc3)
 gc()
 
 #################################Environment####################################
@@ -116,7 +107,6 @@ head(metadata[which(str_detect(metadata$cell, ".*healthy")),])
 metadata$severity <- NA
 metadata$severity[which(str_detect(metadata$cell, ".*mild"))] <- "mild"
 metadata$severity[which(str_detect(metadata$cell, ".*moderate"))] <- "moderate"
-metadata$severity[which(str_detect(metadata$cell, ".*severe"))] <- "severe"
 metadata$severity[which(str_detect(metadata$cell, ".*critical"))] <- "critical"
 metadata$severity[which(str_detect(metadata$cell, ".*healthy"))] <- "healthy"
 metadata$severity <- as.factor(metadata$severity)
@@ -129,15 +119,14 @@ metadata$sample <- factor(metadata$sample, levels = c("healthy1_control1", "heal
                                             "moderate303_Patient2", "critical308_Patient2",
                                             "mild186_Patient3", "critical213_Patient3",
                                             "mild227_Patient4", "critical238_Patient4",
-                                            "critical119_Patient5", "severe123_Patient5", "moderate138_Patient5",
-                                            "critical120_Patient6", "severe122_Patient6", "moderate124_Patient6"))
+                                            "critical119_Patient5", "moderate138_Patient5",
+                                            "critical120_Patient6", "moderate124_Patient6"))
 
 #Creating a patient column:
 metadata$patient <- sub("(.*?)_", "\\2", metadata$sample)
 metadata$patient[metadata$patient == "control1"] <- "Control 1"
 metadata$patient[metadata$patient == "control2"] <- "Control 2"
 metadata$patient[metadata$patient == "control3"] <- "Control 3"
-metadata$patient[metadata$patient == "control4"] <- "Control 4"
 metadata$patient[metadata$patient == "Patient1"] <- "Patient 1"
 metadata$patient[metadata$patient == "Patient2"] <- "Patient 2"
 metadata$patient[metadata$patient == "Patient3"] <- "Patient 3"
@@ -161,11 +150,9 @@ metadata$date[metadata$sample == "mild227_Patient4"] <- "2021-04-22"
 metadata$date[metadata$sample == "critical238_Patient4"] <- "2021-04-30"
 metadata$date[metadata$sample == "critical213_Patient3"] <- "2021-04-15"
 metadata$date[metadata$sample == "critical119_Patient5"] <- "2020-11-27"
-metadata$date[metadata$sample == "severe123_Patient5"] <- "2020-12-11"
 metadata$date[metadata$sample == "moderate138_Patient5"] <- "2020-12-25"
 metadata$date[metadata$sample == "critical213_Patient3"] <- "2021-04-15"
 metadata$date[metadata$sample == "critical120_Patient6"] <- "2020-11-27"
-metadata$date[metadata$sample == "severe122_Patient6"] <- "2020-12-04"
 metadata$date[metadata$sample == "moderate124_Patient6"] <- "2020-12-11"
 metadata$date[metadata$sample == "healthy1_control1"] <- "2021-07-19"
 metadata$date[metadata$sample == "healthy2_control2"] <- "2021-09-01"
@@ -335,15 +322,12 @@ moderate303_Patient3 <- readRDS("moderate303_Patient3.rds")
 critical238_Patient4 <- readRDS("critical238_Patient4.rds")
 mild227_Patient4 <- readRDS("mild227_Patient4.rds")
 critical119_Patient5 <- readRDS("critical119_Patient6.rds")
-severe123_Patient5 <- readRDS("severe123_Patient5.rds")
 moderate138_Patient5 <- readRDS("moderate138_Patient6.rds")
 critical120_Patient6 <- readRDS("critical120_Patient6.rds")
 moderate124_Patient6 <- readRDS("moderate124_Patient6.rds")
-severe122_Patient6 <- readRDS("severe122_Patient6.rds")
 healthy1_control1 <- readRDS("healthy1_control1.rds")
 healthy2_control2 <- readRDS("healthy2_control2.rds")
 healthy3_control3 <- readRDS("healthy3_control3.rds")
-healthy4_control4 <- readRDS("healthy4_control4.rds")
 
 #Importing Azimuth's results for each sample:
 critical293_Patient1$azimuthNames <- read.table("critical293_Patient1_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
@@ -355,26 +339,20 @@ moderate303_Patient3$azimuthNames<- read.table("moderate303_Patient3_azimuth_pre
 critical238_Patient4$azimuthNames<- read.table("critical238_Patient4_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 mild227_Patient4$azimuthNames<- read.table("mild227_Patient4_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 critical119_Patient5$azimuthNames<- read.table("critical119_Patient5_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-severe123_Patient5$azimuthNames<- read.table("severe123_Patient5_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 moderate138_Patient5$azimuthNames<- read.table("moderate138_Patient5_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 critical120_Patient6$azimuthNames<- read.table("critical120_Patient6_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 moderate124_Patient6$azimuthNames<- read.table("moderate124_Patient6_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-severe122_Patient6$azimuthNames<- read.table("severe122_Patient6_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 healthy1_control1$azimuthNames<- read.table("healthy1_control1_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 healthy2_control2$azimuthNames<- read.table("healthy2_control2_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 healthy3_control3$azimuthNames<- read.table("healthy3_control3_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-healthy4_control4$azimuthNames<- read.table("healthy4_control4_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
 
 gc()
-
 
 split.covid <- list(critical119_Patient5, critical120_Patient6, critical238_Patient4, critical293_Patient1,
                     critical213_Patient2, critical308_Patient3,
                     mild227_Patient4, mild186_Patient2,
                     moderate124_Patient6, moderate138_Patient5, moderate272_Patient1, moderate303_Patient3,
-                    severe122_Patient6, severe123_Patient5,
-                    healthy1_control1, healthy2_control2, healthy3_control3, 
-                    healthy4_control4)
+                    healthy1_control1, healthy2_control2, healthy3_control3)
 
 
 #Saving the split object:
@@ -383,7 +361,6 @@ remove(critical119_Patient5, critical120_Patient6, critical238_Patient4, critica
        critical213_Patient2, critical308_Patient3,
        mild227_Patient4, mild186_Patient2,
        moderate124_Patient6, moderate138_Patient5, moderate272_Patient1, moderate303_Patient3,
-       severe122_Patient6, severe123_Patient5,
        healthy1_control1, healthy2_control2, healthy3_control3, 
        healthy4_control4)
 
