@@ -596,11 +596,145 @@ Because I want to find out whether there are differences between the patient gro
 In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
 
 Done things:
-•	
+•	Read in Zhang et al’s Analysis of B Cell Receptor Repertoires Reveals Key Signatures of the Systemic B Cell Response after SARS-CoV-2 Infection. 
+They have observed a rapid increase in clonal expansion and clonal diversification in response to COVID-19.
+•	Adjusted the manuscript a bit.
+•	Read a bit in Dweck’s Motivational Processes Affecting Learning.
+It seems I need to develop adaptive motivational patterns, those that promote the establishment, maintenance, and attainment of personally challenging and personally valued achievement goals. She claims no difference in intellectual ability, but in the patterns and their underlying goals. I need learning goals.
 Tasks:
 •	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
 •	Unify, including the same pathways exactly.
 •	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Adopt adaptive motivational patterns and learning goals!
 •	Think!
 •	Do the networks, using Cytoscape.
+ 
+Exp. 043			                                   		                	  2022.10.07
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+I need to develop adaptive motivational patterns, those that promote the establishment, maintenance, and attainment of personally challenging and personally valued achievement goals. I need learning goals.
+
+Done things:
+•	
+•	
+
+Tasks:
+•	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Unify, including the same pathways exactly.
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Adopt adaptive motivational patterns and learning goals!
+•	Think!
+•	Do the networks, using Cytoscape.
+ 
+Exp. 044			                                   		                	  2022.10.11
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+I need to develop adaptive motivational patterns, those that promote the establishment, maintenance, and attainment of personally challenging and personally valued achievement goals. I need learning goals.
+
+Done things:
+•	The networks!
+•	
+
+Tasks:
+•	Should we remove “EPITHELIAL MESENCHYMAL TRANSITION”?
+•	Unify, including the same pathways exactly.
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Adopt adaptive motivational patterns and learning goals!
+•	Think!
+ 
+Exp. 045			                                   		                	  2022.10.12
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+I need to develop adaptive motivational patterns, those that promote the establishment, maintenance, and attainment of personally challenging and personally valued achievement goals. I need learning goals.
+
+I have set a logFC threshold for the wilcoxauc() function to make the networks, but NOT for the Hallmark pathway analysis.
+
+Done things:
+•	Added network analysis information in Materials and Methods.
+•	Adjusted shared pathways scripts and dot plot.
+•	Added (preliminary) figure legends to manuscript.
+
+Tasks:
+•	Add network analysis information in Materials and Methods, and results in Results.
+•	Add specific comparison pattern descriptions (progression, outcome).
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Adopt adaptive motivational patterns and learning goals!
+•	Think!
+ 
+Exp. 046			                                   		                	  2022.10.13
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+I need to develop adaptive motivational patterns, those that promote the establishment, maintenance, and attainment of personally challenging and personally valued achievement goals. I need learning goals.
+
+I have set a logFC threshold for the wilcoxauc() function to make the networks, but NOT for the Hallmark pathway analysis.
+
+Done things:
+•	
+Tasks:
+•	Referring to the horizontal barplots, do as Jessica has, comparing pathways between progress groups, in both severity stages.
+•	Add network analysis information in Materials and Methods, and results in Results.
+•	Add specific comparison pattern descriptions (progression, outcome).
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Adopt adaptive motivational patterns and learning goals!
+•	Think!
+ 
+Exp. 047			                                   		                	  2022.10.14
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+I need to develop adaptive motivational patterns, those that promote the establishment, maintenance, and attainment of personally challenging and personally valued achievement goals. I need learning goals.
+
+I have set a logFC threshold for the wilcoxauc() function to make the networks, but NOT for the Hallmark pathway analysis.
+
+Done things:
+•	Added network analysis results in Results.
+•	Added specific comparison pattern descriptions (progression, outcome).
+•	Added some discussion.
+•	Referring to the horizontal bar plots, did as Jessica has, comparing pathways between progress groups, in both severity stages.
+•	Combined the figure PowerPoint files.
+•	Adjusted label font size in Cytoscape, and moved the nodes around a bit.
+•	Sent manuscript and figures files to Sensei.
+Tasks:
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Adopt adaptive motivational patterns and learning goals!
+•	Think!
+ 
+Exp. 048			                                   		                	  2022.11.07
+
+
+I am learning the patterns of B cell interaction and change due to COVID-19 infection,
+Because I want to find out whether there are differences between the patient groups (deceased and surviving, progressing and improving) in their response to SARS-CoV-2,
+In order to improve the treatment process (make it more directed), and prognosis (which also helps tailor the best treatment).
+
+I need to develop adaptive motivational patterns, those that promote the establishment, maintenance, and attainment of personally challenging and personally valued achievement goals. I need learning goals.
+
+I have set a logFC threshold for the wilcoxauc() function to make the networks, but NOT for the Hallmark pathway analysis.
+
+Done things:
+•	Finished(?) the Gan Pro continuation application.
+•	Edited the manuscript, until V–J usage bias.
+
+Tasks:
+•	Complete summary comparing COVID patients and healthy controls in the manuscript, as a kind of introduction in the beginning of Results. Read how others have done this.
+•	Adopt adaptive motivational patterns and learning goals!
+•	Think!
 
