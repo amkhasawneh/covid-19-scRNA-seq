@@ -423,41 +423,16 @@ gc()
 #Graph-based clustering:
 covid <- FindNeighbors(covid, dims = 1:40, verbose = T)
 covid <- FindClusters(covid, verbose = T,
-                      resolution = 0.6)
+                      resolution = 0.8)
 
-Idents(covid) <- "integrated_snn_res.1.2" #This one seems to make the most sense.
+Idents(covid) <- "integrated_snn_res.0.8" #This one seems to make the most sense.
 
 #Non-linear dimensional reduction:
 covid <- RunUMAP(covid, dims = 1:40, return.model = T)
-Idents(covid) <- "integrated_snn_res.0.6"
-DimPlot(covid, reduction = "umap", label = T, repel = T, raster = F, group.by = "azimuthNames") + NoLegend()
+Idents(covid) <- "integrated_snn_res.0.8"
+DimPlot(covid, reduction = "umap", label = T, repel = T, raster = T, group.by = "azimuthNames") + NoLegend()
 DimPlot(covid, reduction = "umap", split.by = "severity") + NoLegend()
 DimPlot(covid, reduction = "umap", split.by = "sample") + NoLegend()
 gc()
 
 saveRDS(covid, "04-covid-clustered.rds")
-
-#Extracting count matrices to upload to Azimuth:
-countmat.hlth <- covid[,covid$severity == "healthy"]@assays$RNA@counts
-saveRDS(countmat.hlth, "countmat-hlth.rds")
-countmat.hlth <- CreateSeuratObject(countmat.hlth)
-countmat.hlth$azimuthNames <- read.table("countmat-hlth.tsv", sep = "\t", header = T)$predicted.celltype.l2
-countmat.hlth@meta.data <- covid[,covid$severity == "healthy"]@meta.data
-saveRDS(countmat.hlth, "countmat-hlth.rds")
-
-countmat.rc <- covid[,covid$severity != "healthy" & covid$outcome == "Recovered"]@assays$RNA@counts
-saveRDS(countmat.rc, "countmat-rc.rds")
-countmat.rc <- CreateSeuratObject(countmat.rc)
-countmat.rc@meta.data <- covid[,covid$outcome == "Recovered"]@meta.data
-countmat.rc$azimuthNames <- read.table("countmat-rc.tsv", sep = "\t", header = T)$predicted.celltype.l2
-saveRDS(countmat.rc, "countmat-rc.rds")
-
-countmat.dd <- covid[,covid$severity != "healthy" & covid$outcome == "Deceased"]@assays$RNA@counts
-saveRDS(countmat.dd, "countmat-dd.rds")
-countmat.dd <- CreateSeuratObject(countmat.dd)
-countmat.dd@meta.data <- covid[,covid$outcome == "Deceased"]@meta.data
-countmat.dd$azimuthNames <- read.table("countmat-dd.tsv", sep = "\t", header = T)$predicted.celltype.l2
-saveRDS(countmat.dd, "countmat-dd.rds")
-
-Idents(countmat.hlth) <- "azimuthNames"
-DimPlot(countmat.hlth, reduction = "umap", label = T, repel = T, raster = F) + NoLegend()
