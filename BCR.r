@@ -28,8 +28,6 @@ moderate124 <- read.csv("from_cellranger/moderate124/vdj_b/filtered_contig_annot
 moderate138 <- read.csv("from_cellranger/moderate138/vdj_b/filtered_contig_annotations.csv")
 moderate272 <- read.csv("from_cellranger/moderate272/vdj_b/filtered_contig_annotations.csv")
 moderate303 <- read.csv("from_cellranger/moderate303/vdj_b/filtered_contig_annotations.csv")
-severe122 <- read.csv("from_cellranger/severe122/vdj_b/filtered_contig_annotations.csv")
-severe123 <- read.csv("from_cellranger/severe123/vdj_b/filtered_contig_annotations.csv")
 hc1 <- read.csv("from_cellranger/hc1/vdj_b/filtered_contig_annotations.csv")
 hc2 <- read.csv("from_cellranger/hc2/vdj_b/filtered_contig_annotations.csv")
 hc3 <- read.csv("from_cellranger/hc3/vdj_b/filtered_contig_annotations.csv")
@@ -40,7 +38,6 @@ contig.list <- list(critical119, critical120, critical213,
                     critical238, critical293, critical308,
                     mild186, mild227, 
                     moderate124, moderate138, moderate272, moderate303,
-                    severe122, severe123, 
                     hc1, hc2, hc3)
 
 B.combined <- combineBCR(contig.list, 
@@ -48,13 +45,11 @@ B.combined <- combineBCR(contig.list,
                                      "critical238", "critical293", "critical308",
                                      "mild186","mild227",
                                      "moderate124", "moderate138", "moderate272", "moderate303",
-                                     "severe122", "severe123",
                                      "healthy1", "healthy2", "healthy3"),
                          ID = c("Patient5", "Patient6", "Patient3",
                                 "Patient4", "Patient1", "Patient2",
                                 "Patient3", "Patient4", 
                                 "Patient6", "Patient5", "Patient1", "Patient2",
-                                "Patient6", "Patient5",
                                 "control1", "control2", "control3"))
 
 B.combined <- addVariable(B.combined, name = "severity", 
@@ -62,7 +57,6 @@ B.combined <- addVariable(B.combined, name = "severity",
                                         "critical", "critical", "critical",
                                         "mild", "mild",
                                         "moderate", "moderate", "moderate", "moderate",
-                                        "severe", "severe",
                                         "healthy", "healthy", "healthy"))
 head(B.combined)
 
@@ -73,7 +67,6 @@ remove(critical119, critical120, critical213,
        critical238, critical293, critical308,
        mild186, mild227, 
        moderate124, moderate138, moderate272, moderate303,
-       severe122, severe123,
        hc1, hc2, hc3, contig.list)
 gc()
 
@@ -105,16 +98,16 @@ B.combined <-  B.combined[c("healthy1_control1", "healthy2_control2", "healthy3_
                             "moderate303_Patient2", "critical308_Patient2",
                             "mild186_Patient3", "critical213_Patient3",
                             "mild227_Patient4", "critical238_Patient4",
-                            "critical119_Patient5", "severe123_Patient5", "moderate138_Patient5",
-                            "critical120_Patient6", "severe122_Patient6", "moderate124_Patient6")]
+                            "critical119_Patient5", "moderate138_Patient5",
+                            "critical120_Patient6", "moderate124_Patient6")]
 
-compareClonotypes(df = B.combined, samples = c("healthy1_control1", "healthy2_control2", "healthy3_control3","healthy4_control4",
+compareClonotypes(df = B.combined, samples = c("healthy1_control1", "healthy2_control2", "healthy3_control3",
                                                             "moderate272_Patient1", "critical293_Patient1", 
                                                             "moderate303_Patient2", "critical308_Patient2",
                                                             "mild186_Patient3", "critical213_Patient3",
                                                             "mild227_Patient4", "critical238_Patient4",
-                                                            "critical119_Patient5", "severe123_Patient5", "moderate138_Patient5",
-                                                            "critical120_Patient6", "severe122_Patient6", "moderate124_Patient6"),
+                                                            "critical119_Patient5", "moderate138_Patient5",
+                                                            "critical120_Patient6", "moderate124_Patient6"),
                   cloneCall="gene", graph = "alluvial") 
 
 compareClonotypes(df = B.combined, samples = c("healthy1_control1", "healthy2_control2", "healthy3_control3","healthy4_control4",
@@ -122,8 +115,8 @@ compareClonotypes(df = B.combined, samples = c("healthy1_control1", "healthy2_co
                                                "moderate303_Patient2", "critical308_Patient2",
                                                "mild186_Patient3", "critical213_Patient3",
                                                "mild227_Patient4", "critical238_Patient4",
-                                               "critical119_Patient5", "severe123_Patient5", "moderate138_Patient5",
-                                               "critical120_Patient6", "severe122_Patient6", "moderate124_Patient6"),
+                                               "critical119_Patient5", "moderate138_Patient5",
+                                               "critical120_Patient6", "moderate124_Patient6"),
                   cloneCall="gene", exportTable = T) %>%
   arrange(desc(Proportion))   -> top.clonotypes
  
@@ -167,8 +160,8 @@ BCR$sample <- factor(BCR$sample, levels = c("healthy1_control1", "healthy2_contr
                                             "moderate303_Patient2", "critical308_Patient2",
                                             "mild186_Patient3", "critical213_Patient3",
                                             "mild227_Patient4", "critical238_Patient4",
-                                            "critical119_Patient5", "severe123_Patient5", "moderate138_Patient5",
-                                            "critical120_Patient6", "severe122_Patient6", "moderate124_Patient6"))
+                                            "critical119_Patient5", "moderate138_Patient5",
+                                            "critical120_Patient6", "moderate124_Patient6"))
 
 #Modifying cell type column:
 BCR$azimuthNames <- factor(BCR$azimuthNames, levels = c("B intermediate", "B memory", "B naive", "Plasmablast"))
