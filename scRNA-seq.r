@@ -22,9 +22,9 @@ critical119 <- Read10X("from_cellranger/critical119/sample_feature_bc_matrix")
 critical120 <- Read10X("from_cellranger/critical120/sample_feature_bc_matrix")
 critical238 <- Read10X("from_cellranger/critical238/sample_feature_bc_matrix")
 critical293 <- Read10X("from_cellranger/critical293/sample_feature_bc_matrix")
-hc1 <- Read10X("from_cellranger/hc1/sample_feature_bc_matrix")
-hc2 <- Read10X("from_cellranger/hc2/sample_feature_bc_matrix")
-hc3 <- Read10X("from_cellranger/hc3/sample_feature_bc_matrix")
+healthy1 <- Read10X("from_cellranger/healthy1/sample_feature_bc_matrix")
+healthy2 <- Read10X("from_cellranger/healthy2/sample_feature_bc_matrix")
+healthy3 <- Read10X("from_cellranger/healthy3/sample_feature_bc_matrix")
 
 #Creating Seurat objects:
 mild227 <- CreateSeuratObject(counts = mild227, min.cells = 3, min.features = 100)
@@ -39,15 +39,15 @@ critical213 <- CreateSeuratObject(counts = critical213, min.cells = 3, min.featu
 critical238 <- CreateSeuratObject(counts = critical238, min.cells = 3, min.features = 100)
 critical293 <- CreateSeuratObject(counts = critical293, min.cells = 3, min.features = 100)
 critical308 <- CreateSeuratObject(counts = critical308, min.cells = 3, min.features = 100)
-hc1 <- CreateSeuratObject(counts = hc1, min.cells = 3, min.features = 100)
-hc2 <- CreateSeuratObject(counts = hc2, min.cells = 3, min.features = 100)
-hc3 <- CreateSeuratObject(counts = hc3, min.cells = 3, min.features = 100)
+healthy1 <- CreateSeuratObject(counts = healthy1, min.cells = 3, min.features = 100)
+healthy2 <- CreateSeuratObject(counts = healthy2, min.cells = 3, min.features = 100)
+healthy3 <- CreateSeuratObject(counts = healthy3, min.cells = 3, min.features = 100)
 
 covid <- merge(x = critical119, y = c(critical120, critical213, critical238,
                                       critical293, critical308,
                                       mild186, mild227, 
                                       moderate124, moderate138, moderate272, moderate303,
-                                      hc1, hc2, hc3), 
+                                      healthy1, healthy2, healthy3), 
                add.cell.ids = c("critical119_Patient5", "critical120_Patient6", "critical213_Patient3",
                                 "critical238_Patient4", "critical293_Patient1", "critical308_Patient2", 
                                 "mild186_Patient3", "mild227_Patient4", 
@@ -62,7 +62,7 @@ saveRDS(covid, "00-covid-raw.rds")
 
 remove(critical119, critical120, critical238, critical213, critical293, critical308,
       mild186, mild227, moderate124, moderate138, moderate272, moderate303,
-      hc1, hc2, hc3)
+      healthy1, healthy2, healthy3)
 gc()
 
 #################################Environment####################################
@@ -305,55 +305,19 @@ for (i in 1:length(split.covid)) {
   split.covid[[i]] <- ScaleData(split.covid[[i]], verbose = T)
 }
 
-#Saving separate RDS files for each sample:
+#Saving separate RDS files for each sample to upload to Azimuth:
 for (i in names(split.covid)) {
   saveRDS(split.covid[[i]], file = paste0(names(split.covid[i]), ".rds"))
   names(split.covid[i])
 }
 
 #After uploading the separate RDS files to Azimuth, incorporating the results
-#into the object:
-critical293_Patient1 <- readRDS("critical293_Patient1.rds")
-moderate272_Patient1 <- readRDS("moderate272_Patient1.rds")
-critical308_Patient2 <- readRDS("critical308_Patient2.rds")
-moderate303_Patient2 <- readRDS("moderate303_Patient2.rds")
-critical213_Patient3 <- readRDS("critical213_Patient3.rds")
-mild186_Patient3 <- readRDS("mild186_Patient3.rds")
-critical238_Patient4 <- readRDS("critical238_Patient4.rds")
-mild227_Patient4 <- readRDS("mild227_Patient4.rds")
-critical119_Patient5 <- readRDS("critical119_Patient5.rds")
-moderate138_Patient5 <- readRDS("moderate138_Patient5.rds")
-critical120_Patient6 <- readRDS("critical120_Patient6.rds")
-moderate124_Patient6 <- readRDS("moderate124_Patient6.rds")
-healthy1_control1 <- readRDS("healthy1_control1.rds")
-healthy2_control2 <- readRDS("healthy2_control2.rds")
-healthy3_control3 <- readRDS("healthy3_control3.rds")
-
-#Importing Azimuth's results for each sample:
-critical293_Patient1$azimuthNames <- read.table("critical293_Patient1_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-moderate272_Patient1$azimuthNames<- read.table("moderate272_Patient1_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-critical308_Patient2$azimuthNames <- read.table("critical308_Patient2_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-moderate303_Patient2$azimuthNames<- read.table("moderate303_Patient2_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-critical213_Patient3$azimuthNames <- read.table("critical213_Patient3_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-mild186_Patient3$azimuthNames<- read.table("mild186_Patient3_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-critical238_Patient4$azimuthNames<- read.table("critical238_Patient4_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-mild227_Patient4$azimuthNames<- read.table("mild227_Patient4_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-critical119_Patient5$azimuthNames<- read.table("critical119_Patient5_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-moderate138_Patient5$azimuthNames<- read.table("moderate138_Patient5_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-critical120_Patient6$azimuthNames<- read.table("critical120_Patient6_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-moderate124_Patient6$azimuthNames<- read.table("moderate124_Patient6_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-healthy1_control1$azimuthNames<- read.table("healthy1_control1_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-healthy2_control2$azimuthNames<- read.table("healthy2_control2_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
-healthy3_control3$azimuthNames<- read.table("healthy3_control3_azimuth_pred.tsv", sep = "\t", header = T)$predicted.celltype.l2
+#by importing Azimuth's results for each sample:
+for (i in names(split.covid)) {
+	split.covid[[i]]$azimuthNames <- read.table(paste0(i, "_azimuth_pred.tsv"), sep = "\t", header = T)$predicted.celltype.l2
+}
 
 gc()
-
-split.covid <- list(critical119_Patient5, critical120_Patient6, critical238_Patient4, critical293_Patient1,
-                    critical308_Patient2, critical213_Patient3,
-                    mild227_Patient4, mild186_Patient3,
-                    moderate124_Patient6, moderate138_Patient5, moderate272_Patient1, moderate303_Patient2,
-                    healthy1_control1, healthy2_control2, healthy3_control3)
-
 
 #Saving the split object:
 saveRDS(split.covid, "02-covid-split-scaled.rds")
