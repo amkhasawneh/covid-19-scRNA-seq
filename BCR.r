@@ -448,21 +448,24 @@ ggsave(filename = "isotype-severity.jpeg", path = "./graphs",
 
 #Isotype per patient:
 BCR@meta.data[complete.cases(BCR@meta.data),] %>%
-  group_by(sample, c_gene) %>% dplyr::count() %>% spread(key = c_gene, value = n) %>% as.data.frame() -> matrix
+  group_by(sample, c_gene, severity) %>% dplyr::count() %>% spread(key = c_gene, value = n) %>% as.data.frame() -> matrix
 rownames(matrix) <-  matrix$sample
+matrix$severity[matrix$severity == "mild"] <- "moderate"
+matrix$severity <- factor(matrix$severity, levels = c("healthy", "moderate", "critical"))
 matrix$sample <- NULL
-matrix <- as.matrix(matrix)
 matrix[is.na(matrix)] <- 0
 ggsave(filename = "isotype-sample.jpeg", path = "./graphs",
-       height = 8, width = 8,
-       plot = pheatmap(matrix, labels_row = c("HC1", "HC2", "HC3","HC4",
+       height = 8, width = 10.5,
+       plot = pheatmap(t(matrix[,-1]), labels_col = c("HC1", "HC2", "HC3",
                                               "Patient1 moderate", "Patient1 critical",
                                               "Patient2 mild", "Patient2 critical",
                                               "Patient3 moderate", "Patient3 critical",
                                               "Patient4 mild", "Patient4 critical", 
-                                              "Patient5 critical", "Patient5 severe", "Patient5 moderate",
-                                              "Patient6 critical", "Patient6 severe", "Patient6 moderate"),
-                       main = "Isotype per Sample", cluster_rows = F, cluster_cols = F,
+                                              "Patient5 critical",  "Patient5 moderate",
+                                              "Patient6 critical",  "Patient6 moderate"), 
+                       cluster_rows = F, cluster_cols = F, 
+                       annotation_colors = list(matrix.severity = c(healthy = "green", moderate = "blue", critical = "red")),
+                       annotation_col = data.frame(row.names = rownames(matrix), matrix$severity), annotation_names_col = F,
                        cellwidth = 30, cellheight = 30, name = "Frequency", fontsize = 20))
 
 ################################Complicated stuff###############################
