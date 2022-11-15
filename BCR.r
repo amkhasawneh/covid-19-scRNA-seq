@@ -672,13 +672,21 @@ FindMarkers(object = BCR, ident.1 = "IGHV1-18.IGHJ3..IGHA1_IGLV1-47.IGLJ2.IGLC2"
 
 #V gene diversity, using the Shannon index:
 v.diversity <- data.frame()
-for (i in levels(BCR$sample)) {
-  v.div <- c(i, levels(factor(BCR$patient[BCR$sample == i])), diversity(table(BCR[,BCR$sample == i]$v_gene)), 
-             levels(factor(BCR$outcome[BCR$sample == i])), levels(factor(BCR$severity[BCR$sample == i])))
-  v.diversity <- rbind(v.diversity, v.div)
-  rownames(v.diversity) <- v.diversity[,1]
-  colnames(v.diversity) <- c("sample", "patient", "Shannon.score", "outcome", "severity")
+for (i in levels(factor(BCR$patient))) {
+  for (j in levels(factor(BCR$severity[BCR$patient == i]))) {
+    v.div <- data.frame(i, j,
+                        diversity(BCR[,BCR$patient == i & BCR$severity == j]$v_gene %>% table), 
+                        levels(factor(BCR$outcome[BCR$patient == i & BCR$severity == j])))
+    v.diversity <- rbind(v.diversity, v.div)
+    
+  }
+  
 }
+rownames(v.diversity) <- paste0(v.diversity[,1], " ", v.diversity[,2])
+colnames(v.diversity) <- c("patient", "severity", "Shannon.score", "outcome")
+v.diversity$sample <- rownames(v.diversity)
+v.diversity$severity[v.diversity$severity == "mild"] <- "moderate"
+v.diversity$severity <- factor(v.diversity$severity, levels = c("healthy", "moderate", "critical"))
 
 #Comparing diversity between outcome groups:
 #Recovered vs. Healthy (p-value = 0.01212):
@@ -759,21 +767,20 @@ wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "cr
 #there still remains a "significant" difference...
 
 #Making the jitter graph:
-v.diversity$severity <- factor(v.diversity$severity, levels = c("healthy", "mild", "moderate", "critical"))
-plot <- ggplot(v.diversity, aes(x = sample, y = as.numeric(Shannon.score), label = sample)) + 
-  geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = sample)) +
-  geom_text(position = position_jitter(seed = 1), angle = 90, size = 5) +
-  facet_wrap(~severity) +
-  ylab("Shannon Index Score") +  theme_classic() + 
+v.diversity$outcome <- factor(v.diversity$outcome, levels = c("Healthy", "Recovered", "Deceased"))
+plot <- ggplot(v.diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
+  geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = severity)) +
+  facet_wrap(~outcome, scales = "free_x") +
+  scale_fill_manual(name = "Severity", values = c(healthy = "grey", moderate = "white", critical = "black")) +
+  ylab("Shannon Index Score") +  theme_bw() + 
   theme(axis.title.x = element_blank(), 
         axis.text.x = element_blank(), axis.ticks.x = element_blank(),
         legend.text = element_text(size = 20),
-        strip.text = element_text(size = 15), legend.position = "none") +
+        strip.text = element_text(size = 15)) +
   scale_y_continuous(limits = c(2.2,3.6), breaks = c(2.4, 2.6, 2.8, 3.0, 3.2, 3.4))
-ggsave(filename = "clonotype-diversity-by-severity-jitter.jpeg", path = "./graphs/",
-       width = 15, height = 10, dpi = "retina", 
+ggsave(filename = "clonotype-diversity-by-outcome-jitter.jpeg", path = "./graphs/",
+       width = 10, height = 10, dpi = "retina", 
        plot = plot)
-
 
 #Analyzing clonotypes not unlike the paper by Jin et al (doi: 10.1093/bib/bbab192):
 clonotypes <- BCR@meta.data %>%
@@ -934,16 +941,20 @@ isotypes.covid <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity != "healthy",]
 c.diversity <- data.frame()
 for (i in levels(factor(BCR$patient))) {
   for (j in levels(factor(BCR$severity[BCR$patient == i]))) {
-    c.div <- c(i, j,
+    c.div <- data.frame(i, j,
                diversity(BCR[,BCR$patient == i & BCR$severity == j]$c_gene %>% table), 
              levels(factor(BCR$outcome[BCR$patient == i & BCR$severity == j])))
   c.diversity <- rbind(c.diversity, c.div)
-  rownames(c.diversity) <- paste0(c.diversity[,1], " ", c.diversity[,2])
-  colnames(c.diversity) <- c("patient", "severity", "Shannon.score", "outcome")
-  c.diversity$sample <- rownames(c.diversity)
+  
   }
   
 }
+rownames(c.diversity) <- paste0(c.diversity[,1], " ", c.diversity[,2])
+colnames(c.diversity) <- c("patient", "severity", "Shannon.score", "outcome")
+c.diversity$sample <- rownames(c.diversity)
+c.diversity$severity[c.diversity$severity == "mild"] <- "moderate"
+c.diversity$severity <- factor(c.diversity$severity, levels = c("healthy", "moderate", "critical"))
+
 #Comparing diversity between outcome groups:
 #Recovered vs. Healthy (p-value = 0.01212):
 wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Recovered"]), 
@@ -963,17 +974,18 @@ wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Hea
 #but that healthy controls have significantly lower diversity in the Shannon index.
 
 #Making the jitter graph:
-c.diversity$outcome <- factor(c.diversity$outcome, levels = c("Deceased", "Recovered", "Healthy"))
+c.diversity$outcome <- factor(c.diversity$outcome, levels = c("Healthy", "Recovered", "Deceased"))
 plot <- ggplot(c.diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
-  geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = sample)) +
-  facet_wrap(~outcome) +
-  ylab("Shannon Index Score") +  theme_classic() + 
+  geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = severity)) +
+  facet_wrap(~outcome, scales = "free_x") +
+  scale_fill_manual(name = "Severity", values = c(healthy = "grey", moderate = "white", critical = "black")) +
+  ylab("Shannon Index Score") +  theme_bw() + 
   theme(axis.title.x = element_blank(), 
         axis.text.x = element_blank(), axis.ticks.x = element_blank(),
         legend.text = element_text(size = 20),
         strip.text = element_text(size = 15))
 ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
-       width = 15, height = 10, dpi = "retina", 
+       width = 10, height = 10, dpi = "retina", 
        plot = plot)
 
 ################################Amino Acid Sequence Extraction##################
