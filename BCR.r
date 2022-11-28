@@ -769,10 +769,9 @@ wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "cr
 #Making the jitter graph:
 v.diversity$outcome <- factor(v.diversity$outcome, levels = c("Healthy", "Recovered", "Deceased"))
 plot <- ggplot(v.diversity, aes(x = patient, y = as.numeric(Shannon.score), label = patient)) + 
-  geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = severity)) +
-  geom_text(angle = 90, size = 5) +
+  geom_jitter(shape = 20, size = 5, width = 0.2) +
+  geom_text(angle = 0, size = 5, nudge_y = 0.1) +
   facet_wrap(~outcome, scales = "free_x") +
-  scale_fill_manual(name = "Severity", values = c(healthy = "#00BFC4", critical = "#F8766D")) +
   ylab("Shannon Index Score") +  theme_bw() + 
   theme(axis.title.x = element_blank(), 
         axis.text.x = element_blank(), axis.ticks.x = element_blank(),
