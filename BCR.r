@@ -454,19 +454,18 @@ matrix$severity[matrix$severity == "mild"] <- "moderate"
 matrix$severity <- factor(matrix$severity, levels = c("healthy", "moderate", "critical"))
 matrix$sample <- NULL
 matrix[is.na(matrix)] <- 0
+matrix <- t(matrix[,-1])[c(8,1:2,4:7,3),] 
 ggsave(filename = "isotype-sample.jpeg", path = "./graphs",
        height = 8, width = 10.5,
-       plot = pheatmap(t(matrix[,-1]), labels_col = c("HC1", "HC2", "HC3",
+       plot = pheatmap(matrix, labels_col = c("HC1", "HC2", "HC3",
                                               "Patient1 moderate", "Patient1 critical",
                                               "Patient2 mild", "Patient2 critical",
                                               "Patient3 moderate", "Patient3 critical",
                                               "Patient4 mild", "Patient4 critical", 
                                               "Patient5 critical",  "Patient5 moderate",
                                               "Patient6 critical",  "Patient6 moderate"), 
-                       cluster_rows = F, cluster_cols = F, 
-                       annotation_colors = list(matrix.severity = c(healthy = "green", moderate = "blue", critical = "red")),
-                       annotation_col = data.frame(row.names = rownames(matrix), matrix$severity), annotation_names_col = F,
-                       cellwidth = 30, cellheight = 30, name = "Frequency", fontsize = 20))
+                       cluster_rows = F, cluster_cols = F, annotation_names_col = F, 
+                       cellwidth = 30, cellheight = 15, name = "Frequency", fontsize = 20))
 
 ################################Complicated stuff###############################
 
@@ -687,6 +686,7 @@ colnames(v.diversity) <- c("patient", "severity", "Shannon.score", "outcome")
 v.diversity$sample <- rownames(v.diversity)
 v.diversity$severity[v.diversity$severity == "mild"] <- "moderate"
 v.diversity$severity <- factor(v.diversity$severity, levels = c("healthy", "moderate", "critical"))
+v.diversity <- v.diversity[v.diversity$severity != "moderate",]
 
 #Comparing diversity between outcome groups:
 #Recovered vs. Healthy (p-value = 0.01212):
@@ -768,10 +768,11 @@ wilcox.test(x = as.numeric(v.diversity$Shannon.score[v.diversity$severity == "cr
 
 #Making the jitter graph:
 v.diversity$outcome <- factor(v.diversity$outcome, levels = c("Healthy", "Recovered", "Deceased"))
-plot <- ggplot(v.diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
+plot <- ggplot(v.diversity, aes(x = patient, y = as.numeric(Shannon.score), label = patient)) + 
   geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = severity)) +
+  geom_text(angle = 90, size = 5) +
   facet_wrap(~outcome, scales = "free_x") +
-  scale_fill_manual(name = "Severity", values = c(healthy = "grey", moderate = "white", critical = "black")) +
+  scale_fill_manual(name = "Severity", values = c(healthy = "#00BFC4", critical = "#F8766D")) +
   ylab("Shannon Index Score") +  theme_bw() + 
   theme(axis.title.x = element_blank(), 
         axis.text.x = element_blank(), axis.ticks.x = element_blank(),
@@ -863,7 +864,7 @@ rm(list=setdiff(ls(), "BCR"))
 isotypes <- BCR@meta.data[!is.na(BCR$c_gene),] %>%
   group_by(c_gene, patient, severity, outcome) %>% count() %>%
   arrange(desc(n)) %>% as.data.frame()
-isotypes <-  isotypes %>% spread(key = c_gene, value = n)
+isotypes <- isotypes %>% spread(key = c_gene, value = n)
 isotypes[is.na(isotypes)] <- 0
 rownames(isotypes) <- isotypes$sample
 isotypes$sample <- NULL
@@ -978,7 +979,7 @@ c.diversity$outcome <- factor(c.diversity$outcome, levels = c("Healthy", "Recove
 plot <- ggplot(c.diversity, aes(x = sample, y = as.numeric(Shannon.score))) + 
   geom_jitter(shape = 21, size = 5, width = 0.2, aes(fill = severity)) +
   facet_wrap(~outcome, scales = "free_x") +
-  scale_fill_manual(name = "Severity", values = c(healthy = "grey", moderate = "white", critical = "black")) +
+  scale_fill_manual(name = "Severity", values = c(healthy = "#00BFC4", critical = "#F8766D")) +
   ylab("Shannon Index Score") +  theme_bw() + 
   theme(axis.title.x = element_blank(), 
         axis.text.x = element_blank(), axis.ticks.x = element_blank(),
