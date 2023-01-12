@@ -1754,7 +1754,7 @@ all1c <-
     size = fgseaRes_c1$size,
     NES = fgseaRes_c1$NES,
     padj = fgseaRes_c1$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 all1m <-
   data.frame(
     patient = "Patient 1",
@@ -1765,7 +1765,7 @@ all1m <-
     size = fgseaRes_m1$size,
     NES = fgseaRes_m1$NES,
     padj = fgseaRes_m1$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 
 allc <- NULL
 allm <- NULL
@@ -2004,7 +2004,7 @@ all2c <-
     size = fgseaRes_c2$size,
     NES = fgseaRes_c2$NES,
     padj = fgseaRes_c2$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 all2m <-
   data.frame(
     patient = "Patient 2",
@@ -2015,7 +2015,7 @@ all2m <-
     size = fgseaRes_m2$size,
     NES = fgseaRes_m2$NES,
     padj = fgseaRes_m2$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 
 
 allc <- rbind(allc, all2c)
@@ -2252,7 +2252,7 @@ all3c <-
     size = fgseaRes_c3$size,
     NES = fgseaRes_c3$NES,
     padj = fgseaRes_c3$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 all3m <-
   data.frame(
     patient = "Patient 3",
@@ -2263,7 +2263,7 @@ all3m <-
     size = fgseaRes_m3$size,
     NES = fgseaRes_m3$NES,
     padj = fgseaRes_m3$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 
 
 allc <- rbind(allc, all3c)
@@ -2502,7 +2502,7 @@ all4c <-
     size = fgseaRes_c4$size,
     NES = fgseaRes_c4$NES,
     padj = fgseaRes_c4$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 all4m <-
   data.frame(
     patient = "Patient 4",
@@ -2513,7 +2513,7 @@ all4m <-
     size = fgseaRes_m4$size,
     NES = fgseaRes_m4$NES,
     padj = fgseaRes_m4$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 
 
 allc <- rbind(allc, all4c)
@@ -3172,7 +3172,7 @@ all5c <-
     size = fgseaRes_cm5$size,
     NES = fgseaRes_cm5$NES,
     padj = fgseaRes_cm5$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 all5m <-
   data.frame(
     patient = "Patient 5",
@@ -3183,7 +3183,7 @@ all5m <-
     size = fgseaRes_mc5$size,
     NES = fgseaRes_mc5$NES,
     padj = fgseaRes_mc5$padj
-  ) %>% filter(padj < 0.05) %>% arrange(desc(NES))
+  ) %>% arrange(desc(NES))
 
 
 allc <- rbind(allc, all5c)
@@ -3849,7 +3849,7 @@ all6c <-
     size = fgseaRes_cm6$size,
     NES = fgseaRes_cm6$NES,
     padj = fgseaRes_cm6$padj
-  ) %>% arrange(desc(NES)) %>% filter(padj < 0.05)
+  ) %>% arrange(desc(NES))
 all6m <-
   data.frame(
     patient = "Patient 6",
@@ -3860,7 +3860,7 @@ all6m <-
     size = fgseaRes_mc6$size,
     NES = fgseaRes_mc6$NES,
     padj = fgseaRes_mc6$padj
-  ) %>% arrange(desc(NES)) %>% filter(padj < 0.05)
+  ) %>% arrange(desc(NES))
 
 
 allc <- rbind(allc, all6c)
@@ -5947,7 +5947,7 @@ for (s in c(mod, crit)) {
                   c(i, j),
                   seurat_assay = "RNA",
                   assay = "data") %>%
-        subset(padj < 0.05 & logFC > 0.41) %>% arrange(padj)
+        subset(padj < 0.05) %>% arrange(padj)
       
       #Ranking genes using rrho algorithm again
       ranked.genes <- wlx.mrk %>%
@@ -5955,7 +5955,7 @@ for (s in c(mod, crit)) {
         arrange(-rank)
       
       write.table(
-        ranked.genes[ranked.genes$group == i,],
+        ranked.genes[ranked.genes$group == i & ranked.genes$logFC > 0.41,],
         file = paste0(
           ifelse(ncol(s) == ncol(mod), "moderate", "critical"),
           "-",
@@ -5968,7 +5968,7 @@ for (s in c(mod, crit)) {
         sep = "\t"
       )
       write.table(
-        ranked.genes[ranked.genes$group == j,],
+        ranked.genes[ranked.genes$group == j & ranked.genes$logFC > 0.41,],
         file = paste0(
           ifelse(ncol(s) == ncol(mod), "moderate", "critical"),
           "-",
@@ -5981,7 +5981,7 @@ for (s in c(mod, crit)) {
         sep = "\t"
       )
       cat(
-        ranked.genes$feature[ranked.genes$group == i & ranked.genes$rank > 0],
+        ranked.genes$feature[ranked.genes$group == i & ranked.genes$rank > 0 & ranked.genes$logFC > 0.41],
         sep = "\n",
         file = paste0(
           ifelse(ncol(s) == ncol(mod), "moderate", "critical"),
@@ -5993,7 +5993,7 @@ for (s in c(mod, crit)) {
         )
       )
       cat(
-        ranked.genes$feature[ranked.genes$group == j & ranked.genes$rank > 0],
+        ranked.genes$feature[ranked.genes$group == j & ranked.genes$rank > 0 & ranked.genes$logFC > 0.41],
         sep = "\n",
         file = paste0(
           ifelse(ncol(s) == ncol(mod), "moderate", "critical"),
