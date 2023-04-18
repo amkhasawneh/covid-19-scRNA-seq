@@ -141,7 +141,7 @@ saveRDS(B.combined, "BCR-combined-contigs.rds")
 B.combined <- readRDS("BCR-combined-contigs.rds")
 
 #Loading clustered Seurat object:
-covid <- readRDS("04-covid-clustered.rds")
+covid <- readRDS("../data/byproducts/04-covid-clustered.rds")
 
 #Changing the current Idents:
 Idents(covid) <- "azimuthNames"
@@ -203,7 +203,7 @@ write.table(cells, file = "cell-proportions-samples.tsv", sep = "\t", col.names 
 
 
 ################################Simple gene usage###############################
-BCR <- readRDS("05-BCR-combined.rds")
+BCR <- readRDS("../data/byproducts/05-BCR-combined.rds")
 
 heavy.chains <- BCR@meta.data %>%
   group_by(v_gene, j_gene, c_gene, azimuthNames, patient, severity) %>% dplyr::count() %>% arrange(desc(n)) %>% 
@@ -469,7 +469,7 @@ ggsave(filename = "isotype-sample.jpeg", path = "./graphs",
 
 ################################Complicated stuff###############################
 
-BCR <- readRDS("05-BCR-combined.rds")
+BCR <- readRDS("../data/byproducts/05-BCR-combined.rds")
 
 
 #Creating UMAPs of B-cell clonotypes based on Azimuth cell group predictions:
