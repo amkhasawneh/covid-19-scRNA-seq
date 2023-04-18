@@ -935,8 +935,24 @@ isotypes.covid <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity != "healthy",]
   group_by(c_gene, sample, outcome) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() 
 
+#Isotype proportions in B naive:
+isotype.b.naive <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$azimuthNames == "B naive",] %>%
+  group_by(c_gene, sample) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  as.data.frame() %>%
+  spread(key = c_gene, value = n)
+isotype.b.naive[is.na(isotype.b.naive)] <- 0
+isotype.b.naive[,-1] <- isotype.b.naive[,-1]/rowSums(isotype.b.naive[,-1])*100
+write.table(t(isotype.b.naive), sep = "\t", file = "../results/tables/isotypes-b-naive.tsv")
 
-
+#and Plasmablasts
+isotype.b.plasma <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$azimuthNames == "Plasmablast",] %>%
+  group_by(c_gene, sample) %>% dplyr::count() %>% arrange(desc(n)) %>% 
+  as.data.frame() %>%
+  spread(key = c_gene, value = n)
+isotype.b.plasma[is.na(isotype.b.plasma)] <- 0
+isotype.b.plasma[,-1] <- isotype.b.plasma[,-1]/rowSums(isotype.b.plasma[,-1])*100
+write.table(t(isotype.b.plasma), sep = "\t", file = "../results/tables/isotypes-plasma.tsv")
+  
 #Isotype diversity, using the Shannon index:
 c.diversity <- data.frame()
 for (i in levels(factor(BCR$patient))) {
@@ -966,7 +982,7 @@ wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Rec
 #Deceased vs. Healthy (p-value = 0.04762):
 wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Deceased"]), 
             y = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Healthy"]))
-#Healthy vs. not Healthy(p-value = 0.005882):
+#Healthy vs. not Healthy(p-value = 0.02381):
 wilcox.test(x = as.numeric(c.diversity$Shannon.score[c.diversity$outcome == "Healthy"]), 
             y = as.numeric(c.diversity$Shannon.score[c.diversity$outcome != "Healthy"]))
 
