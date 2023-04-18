@@ -751,14 +751,14 @@ rownames(cellNumPercentage_P6) <- cellNumPercentage_P6[,1]
 cellNumPercentage_P6 <- cellNumPercentage_P6[,-1]
 colnames(cellNumPercentage_P6) <- c("critical", "severe", "moderate")
 
-tiff(file="graphs/barplot-Patient6.tiff", width=6, height=6, units="in", res=300)
+tiff(file="graphs/barplot-Patient62.tiff", width=6, height=6, units="in", res=300)
 par(mai=c(1, 1.4, 0.82, 1.42))
 par(bty="l")
 barplot(as.matrix(cellNumPercentage_P6), 
         width = 0.5, las=2, col=cols,
         legend.text=F, 
         font.axis = 1, las = 1,
-        args.legend=list(x=1.4,y=100,bty="n", cex=0.7)) 
+        args.legend=list(x=2.15,y=100,bty="n", cex=0.7)) 
 dev.off()
 
 ####################################B cell UMAPs################################

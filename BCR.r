@@ -1000,7 +1000,7 @@ ggsave(filename = "isotype-diversity-jitter.jpeg", path = "./graphs/",
 BCR <- readRDS("05-BCR-combined.rds")
 
 sequences <- BCR@meta.data %>%
-  group_by(CTaa, sample, cell,  v_gene, j_gene, c_gene, lkv_gene, lkj_gene, lkc_gene, azimuthNames) %>%
+  group_by(CTaa, sample, cell,  v_gene, j_gene, c_gene, lkv_gene, lkj_gene, lkc_gene) %>%
   as.data.frame()
 sequences <- mutate(sequences, cdr3 = CTaa, CTaa = NULL)
 sequences$hv3 <- vapply(str_split(sequences$cdr3, "[_]"), "[", "", 1)
@@ -1017,7 +1017,6 @@ for (i in levels(factor(sequences$folder))) {
     for (j in 1:nrow(sequences[sequences$folder == i,])) {
       df <- data.frame(cell = sequences[sequences$folder == i,][j,]$cell,
                       sample = as.character(sequences[sequences$folder == i,][j,]$sample),
-                      type = sequences[sequences$folder == i,][j,]$azimuthNames,
                       cdr3 = sequences[sequences$folder == i,][j,]$cdr3,
       hv1 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr1)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr1),
       hv2 = ifelse(length(cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2)==0,NA_character_,cdr[cdr$barcode == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & cdr$chain == "IGH",]$cdr2),
@@ -1114,7 +1113,7 @@ write.table(CDRabundanceIsotype, "cdr-aa-sequences-by-sample-heavy-light.tsv", s
 
 #Again, only this time, including all V(D)J genes and all fwrs of both chains, and constant regions:
 CDRabundanceFWR <- CDR123 %>%
-  group_by(sample, type, fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, cdr3, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4,
+  group_by(sample, fwrh1, hv1, fwrh2, hv2, fwrh3, hv3, fwrh4, cdr3, fwrl1, lt1, fwrl2, lt2, fwrl3, lt3, fwrl4,
            fwrh1_nt, hv1_nt, fwrh2_nt, hv2_nt, fwrh3_nt, hv3_nt, fwrh4_nt, constant_hv_nt, 
            fwrl1_nt, lt1_nt, fwrl2_nt, lt2_nt, fwrl3_nt, lt3_nt, fwrl4_nt, constant_lt_nt,
            HV, HJ, Ig, LV, LJ, LC) %>% 
@@ -1125,6 +1124,6 @@ CDRabundanceFWR <- CDR123 %>%
          full_nt.length = sapply(full_nt, nchar),
          ) %>%
   relocate(n, .after = full_nt.length)
-write.table(CDRabundanceFWR, "cdr-aa-sequences-by-sample-heavy-light-fwr-nt-constant-type.tsv", sep = "\t", col.names = NA)
+write.table(CDRabundanceFWR, "cdr-aa-sequences-by-sample-heavy-light-fwr-nt-constant.tsv", sep = "\t", col.names = NA)
 
   
