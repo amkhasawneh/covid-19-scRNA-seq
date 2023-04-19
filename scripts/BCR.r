@@ -884,10 +884,10 @@ wilcox.test(x = as.numeric(isotypes$IGHM[isotypes$outcome == "Healthy"]),
             y = as.numeric(isotypes$IGHM[isotypes$outcome != "Healthy"]))
 
 #Comparing the different outcome groups' usage of IGHA1:
-#Recovered vs. Healthy (p-value = 0.1939):
+#Recovered vs. Healthy (p-value = 0.2619):
 wilcox.test(x = as.numeric(isotypes$IGHA1[isotypes$outcome == "Recovered"]), 
             y = as.numeric(isotypes$IGHA1[isotypes$outcome == "Healthy"]))
-#Recovered vs. Deceased (p-value = 0.001332):
+#Recovered vs. Deceased (p-value = 0.004329):
 wilcox.test(x = as.numeric(isotypes$IGHA1[isotypes$outcome == "Recovered"]), 
             y = as.numeric(isotypes$IGHA1[isotypes$outcome == "Deceased"]))
 #Deceased vs. Healthy (p-value = 0.02381):
@@ -913,16 +913,16 @@ wilcox.test(x = as.numeric(isotypes$IGHA2[isotypes$outcome == "Healthy"]),
 
 
 #Comparing the different outcome groups' usage of IGHG1:
-#Recovered vs. Healthy (p-value = 0.2788):
+#Recovered vs. Healthy (p-value = 0.1667):
 wilcox.test(x = as.numeric(isotypes$IGHG1[isotypes$outcome == "Recovered"]), 
             y = as.numeric(isotypes$IGHG1[isotypes$outcome == "Healthy"]))
-#Recovered vs. Deceased (p-value = 0.7546):
+#Recovered vs. Deceased (p-value = 1):
 wilcox.test(x = as.numeric(isotypes$IGHG1[isotypes$outcome == "Recovered"]), 
             y = as.numeric(isotypes$IGHG1[isotypes$outcome == "Deceased"]))
 #Deceased vs. Healthy (p-value = 0.2619):
 wilcox.test(x = as.numeric(isotypes$IGHG1[isotypes$outcome == "Deceased"]), 
             y = as.numeric(isotypes$IGHG1[isotypes$outcome == "Healthy"]))
-#Healthy vs. not Healthy(p-value = 0.1655):
+#Healthy vs. not Healthy(p-value = 0.1363):
 wilcox.test(x = as.numeric(isotypes$IGHG1[isotypes$outcome == "Healthy"]), 
             y = as.numeric(isotypes$IGHG1[isotypes$outcome != "Healthy"]))
 
