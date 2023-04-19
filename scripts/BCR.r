@@ -939,19 +939,23 @@ isotypes.covid <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$severity != "healthy",]
 isotype.b.naive <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$azimuthNames == "B naive",] %>%
   group_by(c_gene, sample) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() %>%
-  spread(key = c_gene, value = n)
+  spread(key = sample, value = n)
 isotype.b.naive[is.na(isotype.b.naive)] <- 0
-isotype.b.naive[,-1] <- isotype.b.naive[,-1]/rowSums(isotype.b.naive[,-1])*100
-write.table(t(isotype.b.naive), sep = "\t", file = "../results/tables/isotypes-b-naive.tsv")
+for (column in colnames(isotype.b.naive[,-1])) {
+  isotype.b.naive[,column] <- paste0(isotype.b.naive[,column], " (", formatC(isotype.b.naive[,column]/sum(isotype.b.naive[,column])*100 %>% round(),digits = 2, format = "f"), ")")
+}
+write.table(isotype.b.naive, sep = "\t", file = "../results/tables/isotypes-b-naive.tsv", row.names = F)
 
 #and Plasmablasts
 isotype.b.plasma <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$azimuthNames == "Plasmablast",] %>%
   group_by(c_gene, sample) %>% dplyr::count() %>% arrange(desc(n)) %>% 
   as.data.frame() %>%
-  spread(key = c_gene, value = n)
+  spread(key = sample, value = n)
 isotype.b.plasma[is.na(isotype.b.plasma)] <- 0
-isotype.b.plasma[,-1] <- isotype.b.plasma[,-1]/rowSums(isotype.b.plasma[,-1])*100
-write.table(t(isotype.b.plasma), sep = "\t", file = "../results/tables/isotypes-plasma.tsv")
+for (column in colnames(isotype.b.plasma[,-1])) {
+  isotype.b.plasma[,column] <- paste0(isotype.b.plasma[,column], " (", formatC(isotype.b.plasma[,column]/sum(isotype.b.plasma[,column])*100 %>% round(),digits = 2, format = "f"), ")")
+}
+write.table(isotype.b.plasma, sep = "\t", file = "../results/tables/isotypes-plasma.tsv", row.names = F)
   
 #Isotype diversity, using the Shannon index:
 c.diversity <- data.frame()
