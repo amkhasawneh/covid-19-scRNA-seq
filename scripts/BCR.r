@@ -942,7 +942,7 @@ isotype.b.naive <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$azimuthNames == "B nai
   spread(key = sample, value = n)
 isotype.b.naive[is.na(isotype.b.naive)] <- 0
 for (column in colnames(isotype.b.naive[,-1])) {
-  isotype.b.naive[,column] <- paste0(isotype.b.naive[,column], " (", formatC(isotype.b.naive[,column]/sum(isotype.b.naive[,column])*100 %>% round(),digits = 2, format = "f"), ")")
+  isotype.b.naive[,column] <- paste0(isotype.b.naive[,column], " (", formatC(isotype.b.naive[,column]/ncol(BCR[,!is.na(BCR$c_gene) & BCR$sample == column])*100 %>% round(),digits = 2, format = "f"), ")")
 }
 write.table(isotype.b.naive, sep = "\t", file = "../results/tables/isotypes-b-naive.tsv", row.names = F)
 
@@ -953,7 +953,7 @@ isotype.b.plasma <- BCR@meta.data[!is.na(BCR$c_gene) & BCR$azimuthNames == "Plas
   spread(key = sample, value = n)
 isotype.b.plasma[is.na(isotype.b.plasma)] <- 0
 for (column in colnames(isotype.b.plasma[,-1])) {
-  isotype.b.plasma[,column] <- paste0(isotype.b.plasma[,column], " (", formatC(isotype.b.plasma[,column]/sum(isotype.b.plasma[,column])*100 %>% round(),digits = 2, format = "f"), ")")
+  isotype.b.plasma[,column] <- paste0(isotype.b.plasma[,column], " (", formatC(isotype.b.plasma[,column]/ncol(BCR[,!is.na(BCR$c_gene) & BCR$sample == column])*100 %>% round(),digits = 2, format = "f"), ")")
 }
 write.table(isotype.b.plasma, sep = "\t", file = "../results/tables/isotypes-plasma.tsv", row.names = F)
   
