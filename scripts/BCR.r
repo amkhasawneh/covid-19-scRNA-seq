@@ -1147,3 +1147,31 @@ CDRabundanceFWR <- CDR123 %>%
 write.table(CDRabundanceFWR, "cdr-aa-sequences-by-sample-heavy-light-fwr-nt-constant.tsv", sep = "\t", col.names = NA)
 
   
+
+################################B cell proportion comparison####################
+
+b.cells <- table(BCR$sample, BCR$azimuthNames) |> as.data.frame()
+b.cells <- rename(b.cells, cellType = Var2, sample = Var1, n = Freq)
+b.cells <- b.cells %>%
+  spread(key = cellType, value = n) %>% as.data.frame()
+rownames(b.cells) <- b.cells$sample
+b.cells$sample <- NULL
+b.cells <- b.cells/rowSums(b.cells) * 100
+
+#Comparing B naive in mild and critical samples:
+#Deceased: (p = 0.4)
+wilcox.test(x = b.cells$`B naive`[grepl("m.*Patient(1|2|3)", rownames(b.cells))],
+            y = b.cells$`B naive`[grepl("c.*Patient(1|2|3)", rownames(b.cells))])
+#Survivors: (p = 0.4)
+wilcox.test(x = b.cells$`B naive`[grepl("m.*Patient(4|5|6)", rownames(b.cells))],
+            y = b.cells$`B naive`[grepl("c.*Patient(4|5|6)", rownames(b.cells))])
+
+#Comparing B naive proportions between deceased and survivors: (p = 0.1)
+wilcox.test(x = b.cells$`B naive`[grepl("c.*Patient(1|2|3)", rownames(b.cells))],
+            y = b.cells$`B naive`[grepl("c.*Patient(4|5|6)", rownames(b.cells))])
+
+#Comparing plasma proportions between patients and HCs: (p = 0.004396)
+wilcox.test(x = b.cells$Plasmablast[grepl("Patient", rownames(b.cells))],
+            y = b.cells$Plasmablast[grepl("healthy", rownames(b.cells))])
+
+
