@@ -1030,8 +1030,8 @@ sequences$folder <- vapply(str_split(sequences$sample, "[_]"), "[", "", 1)
 CDR123 <- data.frame()
 for (i in levels(factor(sequences$folder))) {
   
-    cdr <- read.table(paste0("from_cellranger/", i, "/vdj_b/filtered_contig_annotations.csv"), sep = ",", header = T)
-    airr <- read.table(paste0("from_cellranger/", i, "/vdj_b/airr_rearrangement.tsv"), sep = "\t", header = T)
+    cdr <- read.table(paste0("data/from_cellranger/", i, "/vdj_b/filtered_contig_annotations.csv"), sep = ",", header = T)
+    airr <- read.table(paste0("data/from_cellranger/", i, "/vdj_b/airr_rearrangement.tsv"), sep = "\t", header = T)
     
   
     for (j in 1:nrow(sequences[sequences$folder == i,])) {
@@ -1085,8 +1085,9 @@ for (i in levels(factor(sequences$folder))) {
      
       constant_hv_nt = ifelse(length(airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$sequence_aa)==0,NA_character_, substr(x = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$sequence, 
                                                                                                                                                                                                                            start = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$c_sequence_start,
-                                                                                                                                                                                                                           stop = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$c_sequence_end))
-      
+                                                                                                                                                                                                                           stop = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3) & grepl(airr$v_call, pattern = "(H)"),]$c_sequence_end)),
+      clone_id = airr[airr$cell_id == vapply(strsplit(sequences[sequences$folder == i,][j,]$cell, "[_]"), "[", "", 3),]$clone_id[1]
+                        
       
       
       
