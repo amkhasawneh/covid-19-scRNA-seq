@@ -170,7 +170,7 @@ BCR$azimuthNames <- factor(BCR$azimuthNames, levels = c("B intermediate", "B mem
 BCR$HChain <- vapply(strsplit(BCR$CTgene, "[_]"), "[", "", 1)
 BCR$HChain <- sub("(NA)", NA, BCR$HChain)
 BCR$v_gene <- vapply(strsplit(BCR$HChain, "[.]"), "[", "", 1)
-BCR$j_gene <- vapply(strsplit(BCR$HChain, "[.]"), "[", "", 2)
+BCR$j_gene <- vapply(strsplit(BCR$HChain, "[.]"), "[", "", 3)
 BCR$c_gene <- vapply(strsplit(BCR$HChain, "[.]"), "[", "", 4)
 
 BCR$LChain <- vapply(strsplit(BCR$CTgene, "[_]"), "[", "", 2)
