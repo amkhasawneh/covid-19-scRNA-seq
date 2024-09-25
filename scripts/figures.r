@@ -108,6 +108,48 @@ for (i in levels(as.factor(covid[,covid$severity == "healthy"]$patient))) {
 
 
 
+#####################################Barplots for all###########################
+
+nCellsCOVID <- table(covid$azimuthNames[!grepl("healthy", covid$sample)], covid$sample[!grepl("healthy", covid$sample)]) |> as.data.frame()
+nCellsHC <- table(covid$azimuthNames[grepl("healthy", covid$sample)], covid$sample[grepl("healthy", covid$sample)]) |> as.data.frame()
+nCellsCOVID <- rename(nCellsCOVID, Cells = Var1, Sample = Var2, n = Freq)
+nCellsHC <- rename(nCellsHC, Cells = Var1, Sample = Var2, n = Freq)
+nCellsCOVID <- rbind(nCellsCOVID, nCellsHC)
+nCellsCOVID$Outcome <- "deceased"
+nCellsCOVID$Outcome[grepl("healthy", nCellsCOVID$Sample)] <- "healthy"
+nCellsCOVID$Outcome[grepl("Patient(4|5|6)", nCellsCOVID$Sample)] <- "recovered"
+nCellsCOVID$Sample <- factor(nCellsCOVID$Sample, levels = c("healthy1_control1", "healthy2_control2", "healthy3_control3",
+                                                         "moderate272_Patient1", "critical293_Patient1",
+                                                         "moderate303_Patient2", "critical308_Patient2",
+                                                         "mild186_Patient3", "critical213_Patient3",
+                                                         "mild227_Patient4", "critical238_Patient4",
+                                                         "moderate138_Patient5", "critical119_Patient5",
+                                                         "moderate124_Patient6", "critical120_Patient6"))  
+#
+nCellsCOVID$Cells <- factor(nCellsCOVID$Cells, levels = c("ASDC", "cDC1", "cDC2", "pDC", 
+                                                          "B intermediate", "B memory", "B naive", "Plasmablast", 
+                                                          "CD14 Mono", "CD16 Mono", 
+                                                          "CD4 CTL", "CD4 Proliferating", "CD4 TCM", "CD4 TEM",  "CD4 Naive",
+                                                          "CD8 Naive", "CD8 Proliferating", "CD8 TCM", "CD8 TEM", 
+                                                          "MAIT", "Treg", "dnT", "gdT",
+                                                          "NK", "NK Proliferating", "NK_CD56bright",
+                                                          "Eryth", "Platelet", "HSPC", "ILC"))
+
+
+ggsave(filename = "../results/graphs/figure-1-supp.tiff", width = 20, height = 10, dpi = 300,
+       plot = ggplot(data = nCellsCOVID, aes(x = reorder(Sample, desc(Sample)), y = n, fill = Cells)) +
+         geom_bar(stat = "identity", position = "fill") + 
+         theme_classic(base_size = 16) +
+         coord_flip() +
+         theme(legend.text = element_text(size = 20), axis.text = element_text(size = 20)) +
+         ylab("Percentage") + xlab(NULL) +
+         guides(colour = guide_legend(override.aes = list(size=10))) +
+         scale_y_continuous(labels = scales::percent_format(scale = 100))
+       
+       
+)
+
+
 ####################################BCR#########################################
 
 cols <- c("B naive" = "#1e90ff", "Plasmablast" = "#ff584f", "B intermediate" = "#c71585", "B memory" = "#00fa9a")
@@ -776,4 +818,8 @@ for (i in levels(BCR$sample)) {
  
   
 }
+
+
+
+
 
