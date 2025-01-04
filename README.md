@@ -15,3 +15,13 @@ Click [here](https://www.biorxiv.org/content/10.1101/2024.06.11.598368v2.full) f
 **Results**: Expanded T cell receptor (TCR) clones were predominantly SARS-CoV-2-specific, but represented only a small fraction of the total repertoire in all patients. In contrast, while deceased patients exhibited monoclonal B cell receptor (BCR) expansions without COVID-19 specificity, survivors demonstrated diverse and specific BCR clones. These findings suggest that neither TCR diversity nor BCR monoclonal expansions are sufficient for viral clearance and subsequent recovery. Differential gene expression analysis revealed that protein biosynthetic processes were enriched in survivors, but that potentially damaging mitochondrial ATP metabolism was activated in the deceased.
 
 **Conclusion**: This study underscores that BCR repertoire diversity, but not TCR diversity, correlates with favorable outcomes in COVID-19.
+
+
+## Data availability 
+
+The raw and processed data files for this study are accessible on the Gene Expression Omnibus (GEO) database through the following accession numbers: 
+  
+  * GEX, GSE267645
+  * TCR, GSE267639
+  * BCR, GSE267642
+  
