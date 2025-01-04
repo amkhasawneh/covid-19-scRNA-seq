@@ -4,6 +4,8 @@
 
 DOI: https://doi.org/10.3389/fimmu.2024.1405013
 
+Click [here](https://www.biorxiv.org/content/10.1101/2024.06.11.598368v2.full) for pre-print.
+
 ## Abstract
 
 **Introduction**: The SARS-CoV-2 pandemic has had a widespread and severe impact on society, yet there have also been instances of remarkable recovery, even in critically ill patients.
